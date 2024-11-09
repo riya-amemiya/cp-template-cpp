@@ -4,13 +4,13 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/opt/homebrew/Cellar/gcc/14.2.0_1/include/c++/14/aarch64-apple-darwin23"
+                "/opt/homebrew/include/**"
             ],
             "defines": [],
             "macFrameworkPath": [
                 "/Library/Developer/CommandLineTools/SDKs/MacOSX14.sdk/System/Library/Frameworks"
             ],
-            "compilerPath": "/usr/local/bin/g++",
+            "compilerPath": "/opt/homebrew/bin/g++",
             "cStandard": "c23",
             "cppStandard": "c++23",
             "intelliSenseMode": "macos-gcc-arm64"
