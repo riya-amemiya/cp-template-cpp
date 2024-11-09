@@ -1,6 +1,6 @@
 # コンパイラとフラグ
 CXX = g++
-CXXFLAGS = -Wall -g -std=c++20
+CXXFLAGS = -Wall -g -std=c++23
 
 # ターゲットとソースファイル
 TARGET = main.out
