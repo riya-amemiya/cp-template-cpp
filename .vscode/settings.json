@@ -1,0 +1,21 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/Users/usr0200743/programming/playground/cpp/dist",
+            "binaryPath": "/Users/usr0200743/programming/playground/cpp/dist/main.out",
+            "binaryArgs": []
+        }
+    ],
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "*.ejs": "html",
+        "*.erb": "erb",
+        "*.hbs": "handlebars",
+        "*.html": "html",
+        "*.py": "python",
+        "*.s": "asm-intel-x86-generic",
+        "*.tsx": "typescriptreact",
+        "tuple": "cpp",
+        "cmath": "cpp"
+    }
+}
