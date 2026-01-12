@@ -26,6 +26,9 @@
         treefmtEval = treefmt-nix.lib.evalModule pkgs {
           projectRootFile = "flake.nix";
           programs = {
+            actionlint = {
+              enable = true;
+            };
             clang-format = {
               enable = true;
             };
@@ -41,10 +44,24 @@
             statix = {
               enable = true;
             };
+            yamlfmt = {
+              enable = true;
+            };
+            zizmor = {
+              enable = true;
+            };
           };
         };
       in
       {
+        devShells = {
+          default = pkgs.mkShell {
+            buildInputs = [
+              pkgs.gcc
+              pkgs.gnumake
+            ];
+          };
+        };
         formatter = treefmtEval.config.build.wrapper;
         checks = {
           formatting = treefmtEval.config.build.check;
