@@ -37,6 +37,22 @@ constexpr double EPS = 1e-9;
 #define se second
 #define endl '\n'
 
+// chmin/chmax
+template <typename T> bool chmin(T &a, const T &b) {
+  if (a > b) {
+    a = b;
+    return true;
+  }
+  return false;
+}
+template <typename T> bool chmax(T &a, const T &b) {
+  if (a < b) {
+    a = b;
+    return true;
+  }
+  return false;
+}
+
 // 入出力の高速化
 void fastio() {
   cin.tie(nullptr);
@@ -48,6 +64,56 @@ void fastio() {
 template <typename T> vector<vector<T>> vv(int n, int m, T x = T()) {
   return vector<vector<T>>(n, vector<T>(m, x));
 }
+
+// modint構造体
+template <int MOD_> struct modint {
+  static constexpr int MOD = MOD_;
+  ll x;
+  modint(ll x_ = 0) : x((x_ % MOD + MOD) % MOD) {}
+  modint operator-() const { return modint(-x); }
+  modint &operator+=(const modint &a) {
+    if ((x += a.x) >= MOD)
+      x -= MOD;
+    return *this;
+  }
+  modint &operator-=(const modint &a) {
+    if ((x += MOD - a.x) >= MOD)
+      x -= MOD;
+    return *this;
+  }
+  modint &operator*=(const modint &a) {
+    x = x * a.x % MOD;
+    return *this;
+  }
+  modint &operator/=(const modint &a) { return *this *= a.inv(); }
+  modint operator+(const modint &a) const { return modint(*this) += a; }
+  modint operator-(const modint &a) const { return modint(*this) -= a; }
+  modint operator*(const modint &a) const { return modint(*this) *= a; }
+  modint operator/(const modint &a) const { return modint(*this) /= a; }
+  modint pow(ll n) const {
+    modint ret(1), mul(x);
+    while (n > 0) {
+      if (n & 1)
+        ret *= mul;
+      mul *= mul;
+      n >>= 1;
+    }
+    return ret;
+  }
+  modint inv() const { return pow(MOD - 2); }
+  bool operator==(const modint &a) const { return x == a.x; }
+  bool operator!=(const modint &a) const { return x != a.x; }
+  bool operator<(const modint &a) const { return x < a.x; }
+  friend ostream &operator<<(ostream &os, const modint &a) { return os << a.x; }
+  friend istream &operator>>(istream &is, modint &a) {
+    ll t;
+    is >> t;
+    a = modint(t);
+    return is;
+  }
+};
+using mint = modint<MOD>;
+using mint998 = modint<MOD998>;
 
 // 数学関連の関数群
 namespace math {
@@ -118,6 +184,36 @@ ll lcm(ll a, ll b) { return a / gcd(a, b) * b; }
 
 // データ構造
 namespace structure {
+// Binary Indexed Tree (Fenwick Tree)
+template <typename T> struct BIT {
+  int n;
+  vector<T> dat;
+  BIT(int n_) : n(n_), dat(n_ + 1, 0) {}
+
+  // i番目(0-indexed)にxを加算
+  void add(int i, T x) {
+    for (++i; i <= n; i += i & -i)
+      dat[i] += x;
+  }
+
+  // [0, i) の総和 (0-indexed)
+  T sum(int i) const {
+    T ret = 0;
+    for (; i > 0; i -= i & -i)
+      ret += dat[i];
+    return ret;
+  }
+
+  // [l, r) の総和 (0-indexed)
+  T sum(int l, int r) const { return sum(r) - sum(l); }
+
+  // i番目の値を取得 (0-indexed)
+  T get(int i) const { return sum(i + 1) - sum(i); }
+
+  // i番目の値をxに更新 (0-indexed)
+  void set(int i, T x) { add(i, x - get(i)); }
+};
+
 // Union-Find木
 struct UnionFind {
   vector<int> d;
@@ -220,6 +316,72 @@ double binary_search_real(double left, double right, const F &f,
   return right;
 }
 } // namespace binary_search
+
+// 座標圧縮
+template <typename T> struct Compress {
+  vector<T> xs;
+  Compress() = default;
+  Compress(const vector<T> &v) { add(v); }
+
+  void add(const T &x) { xs.push_back(x); }
+  void add(const vector<T> &v) {
+    for (const auto &x : v)
+      xs.push_back(x);
+  }
+
+  void build() {
+    sort(all(xs));
+    xs.erase(unique(all(xs)), xs.end());
+  }
+
+  int get(const T &x) const { return lower_bound(all(xs), x) - xs.begin(); }
+  int size() const { return xs.size(); }
+  const T &operator[](int i) const { return xs[i]; }
+};
+
+// 累積和 (1次元)
+template <typename T> struct CumulativeSum {
+  vector<T> dat;
+  bool built = false;
+  CumulativeSum(int n) : dat(n + 1, 0) {}
+
+  void add(int i, T x) { dat[i + 1] += x; }
+
+  void build() {
+    for (int i = 0; i < (int)dat.size() - 1; i++)
+      dat[i + 1] += dat[i];
+    built = true;
+  }
+
+  // [l, r) の総和
+  T sum(int l, int r) const {
+    assert(built);
+    return dat[r] - dat[l];
+  }
+};
+
+// 累積和 (2次元)
+template <typename T> struct CumulativeSum2D {
+  vector<vector<T>> dat;
+  bool built = false;
+  CumulativeSum2D(int h, int w) : dat(h + 1, vector<T>(w + 1, 0)) {}
+
+  void add(int i, int j, T x) { dat[i + 1][j + 1] += x; }
+
+  void build() {
+    int h = dat.size(), w = dat[0].size();
+    for (int i = 1; i < h; i++)
+      for (int j = 1; j < w; j++)
+        dat[i][j] += dat[i - 1][j] + dat[i][j - 1] - dat[i - 1][j - 1];
+    built = true;
+  }
+
+  // [i1, i2) x [j1, j2) の総和
+  T sum(int i1, int j1, int i2, int j2) const {
+    assert(built);
+    return dat[i2][j2] - dat[i1][j2] - dat[i2][j1] + dat[i1][j1];
+  }
+};
 
 // ローリングハッシュ
 struct RollingHash {
