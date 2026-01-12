@@ -1,5 +1,5 @@
 # コンパイラとフラグ
-CXX = g++
+CXX = g++-15
 CXXFLAGS = -Wall -g -std=c++23
 
 # ターゲットとソースファイル
