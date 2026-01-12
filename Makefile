@@ -1,8 +1,6 @@
-# コンパイラとフラグ
 CXX = g++-15
 CXXFLAGS = -Wall -g -std=c++23
 
-# ターゲットとソースファイル
 TARGET = main.out
 TEST_DIR = ./tests
 
