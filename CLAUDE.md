@@ -32,11 +32,18 @@ main.cpp provides:
 
 - Type aliases (ll, ld, pii, vi, vl, etc.)
 - Constants (INF, LINF, MOD, MOD998, PI, EPS)
+- Grid direction arrays (dx4, dy4, dx8, dy8)
 - Loop macros (rep, rep1, rrep, fore)
 - Container helpers (all, rall, pb, eb, mp, fi, se)
+- Debug macro (`debug(...)` - enabled with `-DLOCAL`, supports pair/vector/set/map)
+- `chmin`/`chmax` helpers
 - `fastio()` for I/O optimization
-- `math` namespace with pow_mod, is_prime, combination, gcd, lcm
-- `structure` namespace with UnionFind and SegTree
+- Input/output helpers (`input<T>()`, `input_vec<T>(n)`, `input_vec2<T>(n,m)`, `print_vec`)
+- `modint` struct with `mint` (MOD=1e9+7) and `mint998` (MOD=998244353)
+- `math` namespace with pow_mod, is_prime, sieve, prime_list, factorize, divisors, extgcd, combination
+- `structure` namespace with BIT, UnionFind, WeightedUnionFind, SegTree, LazySegTree
 - `binary_search` namespace with integer and real binary search
-- `graph` namespace with Dijkstra's algorithm
+- Compress (coordinate compression)
+- CumulativeSum (1D and 2D prefix sums)
 - RollingHash for string matching
+- `graph` namespace with Dijkstra, BFS, Warshall-Floyd, topological sort, Kruskal (MST), LCA
