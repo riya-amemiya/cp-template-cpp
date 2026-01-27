@@ -49,21 +49,21 @@ template <typename T, typename U>
 ostream &operator<<(ostream &os, const pair<T, U> &p) {
   return os << "(" << p.first << ", " << p.second << ")";
 }
-template <typename T>
-ostream &operator<<(ostream &os, const vector<T> &v) {
+template <typename T> ostream &operator<<(ostream &os, const vector<T> &v) {
   os << "[";
   for (int i = 0; i < (int)v.size(); i++) {
-    if (i) os << ", ";
+    if (i)
+      os << ", ";
     os << v[i];
   }
   return os << "]";
 }
-template <typename T>
-ostream &operator<<(ostream &os, const set<T> &s) {
+template <typename T> ostream &operator<<(ostream &os, const set<T> &s) {
   os << "{";
   bool first = true;
   for (const auto &x : s) {
-    if (!first) os << ", ";
+    if (!first)
+      os << ", ";
     first = false;
     os << x;
   }
@@ -74,17 +74,18 @@ ostream &operator<<(ostream &os, const map<K, V> &m) {
   os << "{";
   bool first = true;
   for (const auto &[k, v] : m) {
-    if (!first) os << ", ";
+    if (!first)
+      os << ", ";
     first = false;
     os << k << ": " << v;
   }
   return os << "}";
 }
 void debug_out() { cerr << '\n'; }
-template <typename Head, typename... Tail>
-void debug_out(Head H, Tail... T) {
+template <typename Head, typename... Tail> void debug_out(Head H, Tail... T) {
   cerr << " " << H;
-  if constexpr (sizeof...(T) > 0) cerr << ",";
+  if constexpr (sizeof...(T) > 0)
+    cerr << ",";
   debug_out(T...);
 }
 #define debug(...) cerr << "[" << #__VA_ARGS__ << "]:", debug_out(__VA_ARGS__)
@@ -123,20 +124,24 @@ template <typename T> T input() {
 }
 template <typename T> vector<T> input_vec(int n) {
   vector<T> v(n);
-  for (auto &x : v) cin >> x;
+  for (auto &x : v)
+    cin >> x;
   return v;
 }
 template <typename T> vector<vector<T>> input_vec2(int n, int m) {
   vector<vector<T>> v(n, vector<T>(m));
   for (auto &row : v)
-    for (auto &x : row) cin >> x;
+    for (auto &x : row)
+      cin >> x;
   return v;
 }
 
 // 出力ヘルパー
-template <typename T> void print_vec(const vector<T> &v, const string &sep = " ") {
+template <typename T>
+void print_vec(const vector<T> &v, const string &sep = " ") {
   for (int i = 0; i < (int)v.size(); i++) {
-    if (i) cout << sep;
+    if (i)
+      cout << sep;
     cout << v[i];
   }
   cout << '\n';
@@ -242,7 +247,8 @@ vector<int> prime_list(int n) {
   auto is_p = sieve(n);
   vector<int> primes;
   for (int i = 2; i <= n; i++)
-    if (is_p[i]) primes.push_back(i);
+    if (is_p[i])
+      primes.push_back(i);
   return primes;
 }
 
@@ -259,7 +265,8 @@ vector<pair<ll, int>> factorize(ll n) {
       res.emplace_back(i, cnt);
     }
   }
-  if (n > 1) res.emplace_back(n, 1);
+  if (n > 1)
+    res.emplace_back(n, 1);
   return res;
 }
 
@@ -269,7 +276,8 @@ vector<ll> divisors(ll n) {
   for (ll i = 1; i * i <= n; i++) {
     if (n % i == 0) {
       res.push_back(i);
-      if (i != n / i) res.push_back(n / i);
+      if (i != n / i)
+        res.push_back(n / i);
     }
   }
   sort(all(res));
@@ -382,7 +390,8 @@ template <typename T> struct WeightedUnionFind {
   WeightedUnionFind(int n = 0) : d(n, -1), w(n, 0) {}
 
   int find(int x) {
-    if (d[x] < 0) return x;
+    if (d[x] < 0)
+      return x;
     int root = find(d[x]);
     w[x] += w[d[x]];
     return d[x] = root;
@@ -398,7 +407,8 @@ template <typename T> struct WeightedUnionFind {
     cost += weight(x) - weight(y);
     x = find(x);
     y = find(y);
-    if (x == y) return false;
+    if (x == y)
+      return false;
     if (d[x] > d[y]) {
       swap(x, y);
       cost = -cost;
@@ -476,13 +486,15 @@ template <typename T, typename U> struct LazySegTree {
   LazySegTree(int n_, T e_, U id_, FTT f_, FTU g_, FUU h_)
       : e(e_), id(id_), f(f_), g(g_), h(h_) {
     n = 1;
-    while (n < n_) n *= 2;
+    while (n < n_)
+      n *= 2;
     dat.assign(2 * n - 1, e);
     laz.assign(2 * n - 1, id);
   }
 
   void push(int k) {
-    if (laz[k] == id) return;
+    if (laz[k] == id)
+      return;
     dat[k * 2 + 1] = g(dat[k * 2 + 1], laz[k]);
     dat[k * 2 + 2] = g(dat[k * 2 + 2], laz[k]);
     laz[k * 2 + 1] = h(laz[k * 2 + 1], laz[k]);
@@ -491,7 +503,8 @@ template <typename T, typename U> struct LazySegTree {
   }
 
   void update(int a, int b, U x, int k, int l, int r) {
-    if (r <= a || b <= l) return;
+    if (r <= a || b <= l)
+      return;
     if (a <= l && r <= b) {
       dat[k] = g(dat[k], x);
       laz[k] = h(laz[k], x);
@@ -506,8 +519,10 @@ template <typename T, typename U> struct LazySegTree {
   void update(int a, int b, U x) { update(a, b, x, 0, 0, n); }
 
   T query(int a, int b, int k, int l, int r) {
-    if (r <= a || b <= l) return e;
-    if (a <= l && r <= b) return dat[k];
+    if (r <= a || b <= l)
+      return e;
+    if (a <= l && r <= b)
+      return dat[k];
     push(k);
     T vl = query(a, b, k * 2 + 1, l, (l + r) / 2);
     T vr = query(a, b, k * 2 + 2, (l + r) / 2, r);
@@ -712,7 +727,8 @@ vector<int> bfs(const vector<vector<int>> &g, int s) {
     int v = que.front();
     que.pop();
     for (int u : g[v]) {
-      if (dist[u] != -1) continue;
+      if (dist[u] != -1)
+        continue;
       dist[u] = dist[v] + 1;
       que.push(u);
     }
@@ -726,7 +742,8 @@ vector<int> bfs(const vector<vector<int>> &g, int s) {
 void warshall_floyd(vector<vector<ll>> &dist) {
   int n = dist.size();
   rep(k, n) rep(i, n) rep(j, n) {
-    if (dist[i][k] == LINF || dist[k][j] == LINF) continue;
+    if (dist[i][k] == LINF || dist[k][j] == LINF)
+      continue;
     chmin(dist[i][j], dist[i][k] + dist[k][j]);
   }
 }
@@ -741,24 +758,26 @@ vector<int> topological_sort(const vector<vector<int>> &g) {
       indeg[u]++;
   queue<int> que;
   for (int i = 0; i < n; i++)
-    if (indeg[i] == 0) que.push(i);
+    if (indeg[i] == 0)
+      que.push(i);
   vector<int> order;
   while (!que.empty()) {
     int v = que.front();
     que.pop();
     order.push_back(v);
     for (int u : g[v])
-      if (--indeg[u] == 0) que.push(u);
+      if (--indeg[u] == 0)
+        que.push(u);
   }
-  if ((int)order.size() != n) return {}; // DAGでない
+  if ((int)order.size() != n)
+    return {}; // DAGでない
   return order;
 }
 
 // クラスカル法 (最小全域木)
 // 辺: {コスト, {頂点u, 頂点v}}
 // 返り値: {最小全域木のコスト, 使った辺のリスト}
-pair<ll, vector<pair<ll, pii>>>
-kruskal(int n, vector<pair<ll, pii>> &edges) {
+pair<ll, vector<pair<ll, pii>>> kruskal(int n, vector<pair<ll, pii>> &edges) {
   sort(all(edges));
   structure::UnionFind uf(n);
   ll total = 0;
@@ -779,9 +798,9 @@ struct LCA {
   vector<vector<int>> parent;
   vector<int> depth;
 
-  LCA(const vector<vector<int>> &g, int root = 0)
-      : n(g.size()), LOG(1) {
-    while ((1 << LOG) < n) LOG++;
+  LCA(const vector<vector<int>> &g, int root = 0) : n(g.size()), LOG(1) {
+    while ((1 << LOG) < n)
+      LOG++;
     parent.assign(LOG, vector<int>(n, -1));
     depth.assign(n, 0);
     // BFSで深さと親を求める
@@ -795,7 +814,8 @@ struct LCA {
       int v = que.front();
       que.pop();
       for (int u : g[v]) {
-        if (visited[u]) continue;
+        if (visited[u])
+          continue;
         visited[u] = true;
         depth[u] = depth[v] + 1;
         parent[0][u] = v;
@@ -810,12 +830,15 @@ struct LCA {
   }
 
   int lca(int u, int v) const {
-    if (depth[u] < depth[v]) swap(u, v);
+    if (depth[u] < depth[v])
+      swap(u, v);
     // 深さを揃える
     int diff = depth[u] - depth[v];
     for (int k = 0; k < LOG; k++)
-      if ((diff >> k) & 1) u = parent[k][u];
-    if (u == v) return u;
+      if ((diff >> k) & 1)
+        u = parent[k][u];
+    if (u == v)
+      return u;
     // 同時に登る
     for (int k = LOG - 1; k >= 0; k--) {
       if (parent[k][u] != parent[k][v]) {
