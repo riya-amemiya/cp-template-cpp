@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      pushed: ${{ steps.push.outputs.pushed }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
@@ -22,11 +24,15 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@565684385bcd71bad329742eefe8d12f2e765b39 # v13
       - run: nix fmt
       - name: Push formatting changes
+        id: push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUSH_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
-          git diff --exit-code && exit 0
+          if git diff --exit-code; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # https://github.com/apps/github-actions の User ID = 41898282
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -34,8 +40,10 @@ jobs:
           git add -A
           git commit -m "style: apply nix fmt"
           git push origin "HEAD:${PUSH_BRANCH}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
   build:
     needs: format
+    if: needs.format.outputs.pushed != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
