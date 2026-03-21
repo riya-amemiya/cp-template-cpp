@@ -1,0 +1,10 @@
+cxx = g++-15
+cxxflags = -Wall -g -std=c++23
+
+rule compile
+  command = $cxx $cxxflags -o $out $in
+  description = Compiling $out
+
+build main.out: compile main.cpp
+
+default main.out
