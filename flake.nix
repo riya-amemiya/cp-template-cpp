@@ -58,7 +58,7 @@
           default = pkgs.mkShell {
             buildInputs = [
               pkgs.gcc
-              pkgs.gnumake
+              pkgs.ninja
             ];
           };
         };

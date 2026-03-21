@@ -6,21 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a competitive programming template for C++23. The main.cpp file contains commonly used type aliases, macros, constants, and algorithm implementations for AtCoder and similar competitive programming contests.
 
-## Build and Test Commands
+## Build Commands
 
 Build the project (outputs main.out):
 
 ```bash
-make build
+ninja
 ```
-
-Run tests using online-judge-tools (oj):
-
-```bash
-make test
-```
-
-The test command runs `oj t -c "./main.out" -d ./tests`. Test cases should be placed in the `./tests` directory.
 
 ## Compiler Configuration
 
