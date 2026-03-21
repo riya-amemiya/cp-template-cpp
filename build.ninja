@@ -1,4 +1,4 @@
-cxx = g++-15
+cxx = g++
 cxxflags = -Wall -g -std=c++23
 
 rule compile
