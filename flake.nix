@@ -59,6 +59,7 @@
             buildInputs = [
               pkgs.gcc
               pkgs.ninja
+              pkgs.python3
             ];
           };
         };

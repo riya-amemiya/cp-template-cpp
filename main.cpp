@@ -152,6 +152,8 @@ template <typename T> vector<vector<T>> vv(int n, int m, T x = T()) {
   return vector<vector<T>>(n, vector<T>(m, x));
 }
 
+// @begin modint
+// @exports modint mint mint998
 // modint構造体
 template <int MOD_> struct modint {
   static constexpr int MOD = MOD_;
@@ -201,7 +203,10 @@ template <int MOD_> struct modint {
 };
 using mint = modint<MOD>;
 using mint998 = modint<MOD998>;
+// @end modint
 
+// @begin math
+// @exports pow_mod is_prime sieve prime_list factorize divisors extgcd combination crt floor_sum euler_totient euler_totient_table
 // 数学関連の関数群
 namespace math {
 // 高速な累乗計算 (繰り返し二乗法)
@@ -324,8 +329,76 @@ struct combination {
     return fact[n] % mod * ifact[n - k] % mod;
   }
 };
-} // namespace math
+// 中国剰余定理 (CRT)
+// x ≡ r1 (mod m1), x ≡ r2 (mod m2) を満たす x を求める
+// 返り値: {r, m} (x ≡ r (mod m)), 解なしなら {0, -1}
+pair<ll, ll> crt(ll r1, ll m1, ll r2, ll m2) {
+  ll x, y;
+  ll g = extgcd(m1, m2, x, y);
+  if ((r2 - r1) % g != 0)
+    return {0, -1};
+  ll lcm = m1 / g * m2;
+  ll r = (r1 + m1 % lcm * ((r2 - r1) / g % (m2 / g)) % lcm * x % lcm) % lcm;
+  if (r < 0)
+    r += lcm;
+  return {r, lcm};
+}
 
+// floor_sum: sum_{i=0}^{n-1} floor((a*i + b) / m)
+// ACL準拠の実装
+ll floor_sum(ll n, ll m, ll a, ll b) {
+  assert(n >= 0 && m >= 1);
+  ll ans = 0;
+  if (a >= m) {
+    ans += n * (n - 1) / 2 * (a / m);
+    a %= m;
+  }
+  if (b >= m) {
+    ans += n * (b / m);
+    b %= m;
+  }
+  ll y_max = (a * n + b) / m;
+  ll x_max = y_max * m - b;
+  if (y_max == 0)
+    return ans;
+  ans += (n - (x_max + a - 1) / a) * y_max;
+  ans += floor_sum(y_max, a, m, (a - x_max % a) % a);
+  return ans;
+}
+
+// オイラーのトーシェント関数 φ(n)
+ll euler_totient(ll n) {
+  ll res = n;
+  for (ll i = 2; i * i <= n; i++) {
+    if (n % i == 0) {
+      res -= res / i;
+      while (n % i == 0)
+        n /= i;
+    }
+  }
+  if (n > 1)
+    res -= res / n;
+  return res;
+}
+
+// オイラーのトーシェント関数の篩 (1〜nのφを一括計算)
+vector<ll> euler_totient_table(int n) {
+  vector<ll> phi(n + 1);
+  iota(all(phi), 0LL);
+  for (int i = 2; i <= n; i++) {
+    if (phi[i] == i) { // iは素数
+      for (int j = i; j <= n; j += i) {
+        phi[j] -= phi[j] / i;
+      }
+    }
+  }
+  return phi;
+}
+} // namespace math
+// @end math
+
+// @begin structure
+// @exports BIT UnionFind WeightedUnionFind SegTree LazySegTree SparseTable
 // データ構造
 namespace structure {
 // Binary Indexed Tree (Fenwick Tree)
@@ -531,8 +604,41 @@ template <typename T, typename U> struct LazySegTree {
 
   T query(int a, int b) { return query(a, b, 0, 0, n); }
 };
-} // namespace structure
+// Sparse Table (静的RMQ, O(n)構築 O(1)クエリ)
+template <typename T, typename F = function<T(T, T)>> struct SparseTable {
+  vector<vector<T>> table;
+  vector<int> log_table;
+  F op;
 
+  SparseTable() = default;
+  SparseTable(const vector<T> &v, const F &op_) : op(op_) { build(v); }
+
+  void build(const vector<T> &v) {
+    int n = v.size();
+    int k = 1;
+    while ((1 << k) <= n)
+      k++;
+    table.assign(k, vector<T>(n));
+    log_table.assign(n + 1, 0);
+    for (int i = 2; i <= n; i++)
+      log_table[i] = log_table[i / 2] + 1;
+    table[0] = v;
+    for (int j = 1; j < k; j++)
+      for (int i = 0; i + (1 << j) <= n; i++)
+        table[j][i] = op(table[j - 1][i], table[j - 1][i + (1 << (j - 1))]);
+  }
+
+  // [l, r) のクエリ
+  T query(int l, int r) const {
+    int k = log_table[r - l];
+    return op(table[k][l], table[k][r - (1 << k)]);
+  }
+};
+} // namespace structure
+// @end structure
+
+// @begin binary_search
+// @exports binary_search_left binary_search_right binary_search_real
 // 二分探索関連
 namespace binary_search {
 // 整数二分探索（以上）
@@ -573,7 +679,9 @@ double binary_search_real(double left, double right, const F &f,
   return right;
 }
 } // namespace binary_search
+// @end binary_search
 
+// @begin Compress
 // 座標圧縮
 template <typename T> struct Compress {
   vector<T> xs;
@@ -595,7 +703,10 @@ template <typename T> struct Compress {
   int size() const { return xs.size(); }
   const T &operator[](int i) const { return xs[i]; }
 };
+// @end Compress
 
+// @begin CumulativeSum
+// @exports CumulativeSum CumulativeSum2D
 // 累積和 (1次元)
 template <typename T> struct CumulativeSum {
   vector<T> dat;
@@ -639,7 +750,51 @@ template <typename T> struct CumulativeSum2D {
     return dat[i2][j2] - dat[i1][j2] - dat[i2][j1] + dat[i1][j1];
   }
 };
+// @end CumulativeSum
 
+// @begin Matrix
+// 行列 (行列累乗対応)
+template <typename T> struct Matrix {
+  int n, m;
+  vector<vector<T>> a;
+  Matrix(int n_, int m_, T val = 0) : n(n_), m(m_), a(n_, vector<T>(m_, val)) {}
+  Matrix(const vector<vector<T>> &a_) : n(a_.size()), m(a_[0].size()), a(a_) {}
+
+  vector<T> &operator[](int i) { return a[i]; }
+  const vector<T> &operator[](int i) const { return a[i]; }
+
+  static Matrix E(int n) {
+    Matrix res(n, n);
+    for (int i = 0; i < n; i++)
+      res[i][i] = 1;
+    return res;
+  }
+
+  Matrix operator*(const Matrix &B) const {
+    assert(m == B.n);
+    Matrix C(n, B.m);
+    for (int i = 0; i < n; i++)
+      for (int k = 0; k < m; k++)
+        for (int j = 0; j < B.m; j++)
+          C[i][j] += a[i][k] * B.a[k][j];
+    return C;
+  }
+
+  Matrix pow(ll exp) const {
+    assert(n == m);
+    Matrix ret = E(n), base = *this;
+    while (exp > 0) {
+      if (exp & 1)
+        ret = ret * base;
+      base = base * base;
+      exp >>= 1;
+    }
+    return ret;
+  }
+};
+// @end Matrix
+
+// @begin RollingHash
 // ローリングハッシュ
 struct RollingHash {
   static const uint64_t mod = (1ull << 61ull) - 1;
@@ -691,7 +846,118 @@ struct RollingHash {
 
 // 静的メンバ変数の定義
 vector<uint64_t> RollingHash::power;
+// @end RollingHash
 
+// @begin string_algo
+// @exports z_algorithm kmp_table kmp_search suffix_array lcp_array
+// 文字列アルゴリズム
+namespace string_algo {
+// Z-algorithm: z[i] = s[i..] と s の最長共通接頭辞の長さ
+vector<int> z_algorithm(const string &s) {
+  int n = s.size();
+  vector<int> z(n);
+  z[0] = n;
+  int i = 1, j = 0;
+  while (i < n) {
+    while (i + j < n && s[j] == s[i + j])
+      j++;
+    z[i] = j;
+    if (j == 0) {
+      i++;
+      continue;
+    }
+    int k = 1;
+    while (k < j && k + z[k] < j) {
+      z[i + k] = z[k];
+      k++;
+    }
+    i += k;
+    j -= k;
+  }
+  return z;
+}
+
+// KMP法: prefix function (failure function)
+// pi[i] = s[0..i] の最長の proper prefix-suffix の長さ
+vector<int> kmp_table(const string &s) {
+  int n = s.size();
+  vector<int> pi(n, 0);
+  for (int i = 1; i < n; i++) {
+    int j = pi[i - 1];
+    while (j > 0 && s[i] != s[j])
+      j = pi[j - 1];
+    if (s[i] == s[j])
+      j++;
+    pi[i] = j;
+  }
+  return pi;
+}
+
+// KMP法によるパターン検索: text中のpatternの出現位置を返す
+vector<int> kmp_search(const string &text, const string &pattern) {
+  string s = pattern + "$" + text;
+  auto pi = kmp_table(s);
+  vector<int> res;
+  int m = pattern.size();
+  for (int i = 2 * m; i < (int)s.size(); i++) {
+    if (pi[i] == m)
+      res.push_back(i - 2 * m);
+  }
+  return res;
+}
+
+// Suffix Array (O(n log^2 n))
+vector<int> suffix_array(const string &s) {
+  int n = s.size();
+  vector<int> sa(n), rank_(n), tmp(n);
+  iota(all(sa), 0);
+  for (int i = 0; i < n; i++)
+    rank_[i] = s[i];
+  for (int k = 1; k < n; k *= 2) {
+    auto cmp = [&](int a, int b) {
+      if (rank_[a] != rank_[b])
+        return rank_[a] < rank_[b];
+      int ra = a + k < n ? rank_[a + k] : -1;
+      int rb = b + k < n ? rank_[b + k] : -1;
+      return ra < rb;
+    };
+    sort(all(sa), cmp);
+    tmp[sa[0]] = 0;
+    for (int i = 1; i < n; i++)
+      tmp[sa[i]] = tmp[sa[i - 1]] + (cmp(sa[i - 1], sa[i]) ? 1 : 0);
+    rank_ = tmp;
+  }
+  return sa;
+}
+
+// LCP Array (Kasai's algorithm, O(n))
+// sa: suffix array, 返り値: lcp[i] = sa[i]とsa[i+1]のLCP長
+vector<int> lcp_array(const string &s, const vector<int> &sa) {
+  int n = s.size();
+  vector<int> rank_(n), lcp(n - 1);
+  for (int i = 0; i < n; i++)
+    rank_[sa[i]] = i;
+  int h = 0;
+  for (int i = 0; i < n; i++) {
+    if (rank_[i] > 0) {
+      int j = sa[rank_[i] - 1];
+      while (i + h < n && j + h < n && s[i + h] == s[j + h])
+        h++;
+      lcp[rank_[i] - 1] = h;
+      if (h > 0)
+        h--;
+    } else {
+      h = 0;
+    }
+  }
+  return lcp;
+}
+} // namespace string_algo
+// @end string_algo
+
+// @begin graph
+// @dep structure
+// @exports dijkstra bfs warshall_floyd topological_sort kruskal LCA bellman_ford scc MaxFlow EulerTour
 // グラフ関連
 namespace graph {
 // ダイクストラ法
@@ -853,11 +1119,163 @@ struct LCA {
     return depth[u] + depth[v] - 2 * depth[lca(u, v)];
   }
 };
+// ベルマンフォード法 (負辺対応最短路)
+// 負閉路で到達可能な頂点の距離は -LINF になる
+vector<ll> bellman_ford(int n,
+                        const vector<tuple<int, int, ll>> &edges, int s) {
+  vector<ll> dist(n, LINF);
+  dist[s] = 0;
+  for (int i = 0; i < n - 1; i++) {
+    for (auto &[u, v, w] : edges) {
+      if (dist[u] != LINF && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+      }
+    }
+  }
+  // 負閉路検出: もう一度 n-1 回回して更新があれば負閉路
+  for (int i = 0; i < n - 1; i++) {
+    for (auto &[u, v, w] : edges) {
+      if (dist[u] != LINF && dist[u] + w < dist[v]) {
+        dist[v] = -LINF;
+      }
+    }
+  }
+  return dist;
+}
+
+// 強連結成分分解 (SCC) - Kosaraju's algorithm
+// 返り値: comp[v] = 頂点vが属するSCC番号 (トポロジカル順)
+vector<int> scc(const vector<vector<int>> &g) {
+  int n = g.size();
+  vector<vector<int>> rg(n);
+  for (int v = 0; v < n; v++)
+    for (int u : g[v])
+      rg[u].push_back(v);
+
+  vector<int> order, comp(n, -1);
+  vector<bool> visited(n, false);
+
+  // 1回目のDFS: 帰りがけ順を記録
+  auto dfs1 = [&](auto &self, int v) -> void {
+    visited[v] = true;
+    for (int u : g[v])
+      if (!visited[u])
+        self(self, u);
+    order.push_back(v);
+  };
+  for (int i = 0; i < n; i++)
+    if (!visited[i])
+      dfs1(dfs1, i);
+
+  // 2回目のDFS: 逆グラフ上で帰りがけ順の逆順に探索
+  int cnt = 0;
+  auto dfs2 = [&](auto &self, int v, int c) -> void {
+    comp[v] = c;
+    for (int u : rg[v])
+      if (comp[u] == -1)
+        self(self, u, c);
+  };
+  for (int i = n - 1; i >= 0; i--)
+    if (comp[order[i]] == -1)
+      dfs2(dfs2, order[i], cnt++);
+
+  return comp;
+}
+
+// 最大流 (Dinic's algorithm)
+struct MaxFlow {
+  struct Edge {
+    int to, rev;
+    ll cap;
+  };
+
+  int n;
+  vector<vector<Edge>> graph;
+  vector<int> level, iter;
+
+  MaxFlow(int n_) : n(n_), graph(n_), level(n_), iter(n_) {}
+
+  void add_edge(int from, int to, ll cap) {
+    graph[from].push_back({to, (int)graph[to].size(), cap});
+    graph[to].push_back({from, (int)graph[from].size() - 1, 0});
+  }
+
+  bool bfs(int s, int t) {
+    fill(all(level), -1);
+    queue<int> que;
+    level[s] = 0;
+    que.push(s);
+    while (!que.empty()) {
+      int v = que.front();
+      que.pop();
+      for (auto &e : graph[v]) {
+        if (e.cap > 0 && level[e.to] < 0) {
+          level[e.to] = level[v] + 1;
+          que.push(e.to);
+        }
+      }
+    }
+    return level[t] >= 0;
+  }
+
+  ll dfs(int v, int t, ll f) {
+    if (v == t)
+      return f;
+    for (int &i = iter[v]; i < (int)graph[v].size(); i++) {
+      Edge &e = graph[v][i];
+      if (e.cap > 0 && level[v] < level[e.to]) {
+        ll d = dfs(e.to, t, min(f, e.cap));
+        if (d > 0) {
+          e.cap -= d;
+          graph[e.to][e.rev].cap += d;
+          return d;
+        }
+      }
+    }
+    return 0;
+  }
+
+  ll max_flow(int s, int t) {
+    ll flow = 0;
+    while (bfs(s, t)) {
+      fill(all(iter), 0);
+      ll d;
+      while ((d = dfs(s, t, LINF)) > 0)
+        flow += d;
+    }
+    return flow;
+  }
+};
+
+// オイラーツアー (部分木クエリ用)
+struct EulerTour {
+  vector<int> in, out;
+  int timer;
+
+  EulerTour(const vector<vector<int>> &g, int root = 0)
+      : in(g.size()), out(g.size()), timer(0) {
+    dfs(g, root, -1);
+  }
+
+  void dfs(const vector<vector<int>> &g, int v, int p) {
+    in[v] = timer++;
+    for (int u : g[v])
+      if (u != p)
+        dfs(g, u, v);
+    out[v] = timer;
+  }
+
+  // 頂点vの部分木は [in[v], out[v]) に対応
+  bool is_ancestor(int u, int v) const { return in[u] <= in[v] && out[v] <= out[u]; }
+};
 } // namespace graph
+// @end graph
 
 // メイン関数
+#ifndef TESTING
 int main() {
   fastio();
 
   return 0;
 }
+#endif

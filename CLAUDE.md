@@ -14,6 +14,13 @@ Build the project (outputs main.out):
 ninja
 ```
 
+Build and run tests:
+
+```bash
+ninja tests
+for t in tests/*.out; do ./$t; done
+```
+
 ## Compiler Configuration
 
 The project uses g++ with C++23 standard (`-std=c++23`) and includes `-Wall -g` flags for warnings and debugging.
@@ -32,10 +39,26 @@ main.cpp provides:
 - `fastio()` for I/O optimization
 - Input/output helpers (`input<T>()`, `input_vec<T>(n)`, `input_vec2<T>(n,m)`, `print_vec`)
 - `modint` struct with `mint` (MOD=1e9+7) and `mint998` (MOD=998244353)
-- `math` namespace with pow_mod, is_prime, sieve, prime_list, factorize, divisors, extgcd, combination
-- `structure` namespace with BIT, UnionFind, WeightedUnionFind, SegTree, LazySegTree
+- `math` namespace with pow_mod, is_prime, sieve, prime_list, factorize, divisors, extgcd, combination, crt, floor_sum, euler_totient, euler_totient_table
+- `structure` namespace with BIT, UnionFind, WeightedUnionFind, SegTree, LazySegTree, SparseTable
 - `binary_search` namespace with integer and real binary search
 - Compress (coordinate compression)
 - CumulativeSum (1D and 2D prefix sums)
+- Matrix (matrix multiplication and exponentiation)
 - RollingHash for string matching
-- `graph` namespace with Dijkstra, BFS, Warshall-Floyd, topological sort, Kruskal (MST), LCA
+- `string_algo` namespace with z_algorithm, kmp_table, kmp_search, suffix_array, lcp_array
+- `graph` namespace with Dijkstra, BFS, Warshall-Floyd, topological sort, Kruskal (MST), LCA, Bellman-Ford, SCC, MaxFlow (Dinic), EulerTour
+
+## Tests
+
+Tests are in `tests/` directory with one file per feature area. Each test file includes `main.cpp` with `-DTESTING` flag (which guards the template's `main()` function). Test framework is a minimal assertion-based header (`tests/test_helper.hpp`).
+
+## Submission Code Stripper
+
+`tools/strip.py` generates minimal submission code by removing unused template blocks:
+
+```bash
+python3 tools/strip.py solution.cpp > submission.cpp
+```
+
+Blocks in main.cpp are marked with `// @begin name` / `// @end name` comments. Dependencies are declared with `// @dep name` and exported identifiers with `// @exports id1 id2 ...`.
