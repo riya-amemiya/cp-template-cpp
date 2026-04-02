@@ -65,4 +65,4 @@ jobs:
       - name: Build and run tests
         run: |
           nix develop --command ninja tests
-          for t in tests/*.out; do echo "=== $t ===" && ./$t; done
+          for t in tests/*.out; do echo "=== $t ===" && "./$t"; done
