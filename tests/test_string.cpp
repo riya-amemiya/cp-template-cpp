@@ -58,7 +58,8 @@ TEST(kmp_search_no_match) {
 
 TEST(suffix_array_basic) {
   auto sa = string_algo::suffix_array("banana");
-  // Suffixes sorted: "a"(5), "ana"(3), "anana"(1), "banana"(0), "na"(4), "nana"(2)
+  // Suffixes sorted: "a"(5), "ana"(3), "anana"(1), "banana"(0), "na"(4),
+  // "nana"(2)
   vector<int> expected = {5, 3, 1, 0, 4, 2};
   ASSERT_EQ(sa, expected);
 }

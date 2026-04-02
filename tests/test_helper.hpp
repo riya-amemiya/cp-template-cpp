@@ -53,8 +53,8 @@ inline int run_all_tests() {
       failed++;
     }
   }
-  std::cerr << "\n" << passed << " passed, " << failed << " failed"
-            << std::endl;
+  std::cerr << "\n"
+            << passed << " passed, " << failed << " failed" << std::endl;
   return failed > 0 ? 1 : 0;
 }
 } // namespace test

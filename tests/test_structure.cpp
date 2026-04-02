@@ -60,9 +60,8 @@ TEST(LazySegTree_range_assign_range_min) {
   const ll NONE = LINF + 1; // lazy identity
   int n = 5;
   structure::LazySegTree<ll, ll> seg(
-      n, LINF, NONE,
-      [](ll a, ll b) { return min(a, b); },                // f: merge
-      [](ll a, ll b) -> ll { return b == LINF + 1 ? a : b; }, // g: apply
+      n, LINF, NONE, [](ll a, ll b) { return min(a, b); },     // f: merge
+      [](ll a, ll b) -> ll { return b == LINF + 1 ? a : b; },  // g: apply
       [](ll a, ll b) -> ll { return b == LINF + 1 ? a : b; }); // h: compose
 
   // 各要素をセット

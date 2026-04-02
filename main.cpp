@@ -206,8 +206,8 @@ using mint998 = modint<MOD998>;
 // @end modint
 
 // @begin math
-// @exports pow_mod is_prime sieve prime_list factorize divisors extgcd combination crt floor_sum euler_totient euler_totient_table
-// 数学関連の関数群
+// @exports pow_mod is_prime sieve prime_list factorize divisors extgcd
+// combination crt floor_sum euler_totient euler_totient_table 数学関連の関数群
 namespace math {
 // 高速な累乗計算 (繰り返し二乗法)
 template <typename T> T pow_mod(T a, T n, T m) {
@@ -957,8 +957,8 @@ vector<int> lcp_array(const string &s, const vector<int> &sa) {
 
 // @begin graph
 // @dep structure
-// @exports dijkstra bfs warshall_floyd topological_sort kruskal LCA bellman_ford scc MaxFlow EulerTour
-// グラフ関連
+// @exports dijkstra bfs warshall_floyd topological_sort kruskal LCA
+// bellman_ford scc MaxFlow EulerTour グラフ関連
 namespace graph {
 // ダイクストラ法
 vector<ll> dijkstra(const vector<vector<pair<int, ll>>> &g, int s) {
@@ -1121,8 +1121,8 @@ struct LCA {
 };
 // ベルマンフォード法 (負辺対応最短路)
 // 負閉路で到達可能な頂点の距離は -LINF になる
-vector<ll> bellman_ford(int n,
-                        const vector<tuple<int, int, ll>> &edges, int s) {
+vector<ll> bellman_ford(int n, const vector<tuple<int, int, ll>> &edges,
+                        int s) {
   vector<ll> dist(n, LINF);
   dist[s] = 0;
   for (int i = 0; i < n - 1; i++) {
@@ -1266,7 +1266,9 @@ struct EulerTour {
   }
 
   // 頂点vの部分木は [in[v], out[v]) に対応
-  bool is_ancestor(int u, int v) const { return in[u] <= in[v] && out[v] <= out[u]; }
+  bool is_ancestor(int u, int v) const {
+    return in[u] <= in[v] && out[v] <= out[u];
+  }
 };
 } // namespace graph
 // @end graph
