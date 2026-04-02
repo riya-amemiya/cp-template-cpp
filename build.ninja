@@ -5,6 +5,19 @@ rule compile
   command = $cxx $cxxflags -o $out $in
   description = Compiling $out
 
+rule compile_test
+  command = $cxx $cxxflags -DTESTING -o $out $in
+  description = Compiling test $out
+
 build main.out: compile main.cpp
+
+build tests/test_math.out: compile_test tests/test_math.cpp
+build tests/test_structure.out: compile_test tests/test_structure.cpp
+build tests/test_graph.out: compile_test tests/test_graph.cpp
+build tests/test_string.out: compile_test tests/test_string.cpp
+build tests/test_modint.out: compile_test tests/test_modint.cpp
+build tests/test_misc.out: compile_test tests/test_misc.cpp
+
+build tests: phony tests/test_math.out tests/test_structure.out tests/test_graph.out tests/test_string.out tests/test_modint.out tests/test_misc.out
 
 default main.out

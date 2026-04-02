@@ -2,3 +2,4 @@
 main.out.dSYM/
 main.out
 .ninja_log
+tests/*.out
