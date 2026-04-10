@@ -14,6 +14,11 @@ using vvl = vector<vector<ll>>;
 using vb = vector<bool>;
 using vvb = vector<vector<bool>>;
 using vs = vector<string>;
+// TUNING: 追加の型エイリアス
+using vpii = vector<pii>;
+using vpll = vector<pll>;
+using vld = vector<ld>;
+using vull = vector<ull>;
 
 // 定数
 constexpr int INF = 1e9;
@@ -30,18 +35,24 @@ constexpr int dx8[] = {0, 1, 1, 1, 0, -1, -1, -1};
 constexpr int dy8[] = {1, 1, 0, -1, -1, -1, 0, 1};
 
 // マクロ
-#define rep(i, n) for (int i = 0; i < (n); ++i)
-#define rep1(i, n) for (int i = 1; i <= (n); ++i)
-#define rrep(i, n) for (int i = (n) - 1; i >= 0; --i)
+#define rep(i, n) for (int i = 0; i < (int)(n); ++i)
+#define rep1(i, n) for (int i = 1; i <= (int)(n); ++i)
+#define rep2(i, a, b) for (int i = (int)(a); i < (int)(b); ++i)
+#define rrep(i, n) for (int i = (int)(n) - 1; i >= 0; --i)
+#define rrep1(i, n) for (int i = (int)(n); i >= 1; --i)
 #define fore(i, a) for (auto &i : a)
 #define all(v) (v).begin(), (v).end()
 #define rall(v) (v).rbegin(), (v).rend()
+#define sz(x) ((int)(x).size())
 #define pb push_back
 #define eb emplace_back
 #define mp make_pair
 #define fi first
 #define se second
 #define endl '\n'
+#define Sort(v) sort(all(v))
+#define Reverse(v) reverse(all(v))
+#define Unique(v) v.erase(unique(all(v)), v.end())
 
 // デバッグマクロ
 #ifdef LOCAL
@@ -80,6 +91,26 @@ ostream &operator<<(ostream &os, const map<K, V> &m) {
     os << k << ": " << v;
   }
   return os << "}";
+}
+template <typename T> ostream &operator<<(ostream &os, const multiset<T> &s) {
+  os << "{";
+  bool first = true;
+  for (const auto &x : s) {
+    if (!first)
+      os << ", ";
+    first = false;
+    os << x;
+  }
+  return os << "}";
+}
+template <typename T> ostream &operator<<(ostream &os, const deque<T> &v) {
+  os << "[";
+  for (int i = 0; i < (int)v.size(); i++) {
+    if (i)
+      os << ", ";
+    os << v[i];
+  }
+  return os << "]";
 }
 void debug_out() { cerr << '\n'; }
 template <typename Head, typename... Tail> void debug_out(Head H, Tail... T) {
@@ -136,6 +167,21 @@ template <typename T> vector<vector<T>> input_vec2(int n, int m) {
   return v;
 }
 
+// TUNING: クイック入力マクロ
+inline void input_from_cin() {}
+template <typename Head, typename... Tail>
+inline void input_from_cin(Head &head, Tail &...tail) {
+  cin >> head;
+  input_from_cin(tail...);
+}
+#define INT(...) int __VA_ARGS__; input_from_cin(__VA_ARGS__)
+#define LL(...) ll __VA_ARGS__; input_from_cin(__VA_ARGS__)
+#define STR(...) string __VA_ARGS__; input_from_cin(__VA_ARGS__)
+#define CHR(...) char __VA_ARGS__; input_from_cin(__VA_ARGS__)
+#define DBL(...) double __VA_ARGS__; input_from_cin(__VA_ARGS__)
+#define VEC(type, name, size) vector<type> name(size); for(auto &_x : name) cin >> _x
+#define VEC2(type, name, h, w) vector<vector<type>> name(h, vector<type>(w)); for(auto &_r : name) for(auto &_x : _r) cin >> _x
+
 // 出力ヘルパー
 template <typename T>
 void print_vec(const vector<T> &v, const string &sep = " ") {
@@ -146,6 +192,12 @@ void print_vec(const vector<T> &v, const string &sep = " ") {
   }
   cout << '\n';
 }
+
+// TUNING: Yes/No 出力ヘルパー
+inline void Yes(bool b = true) { cout << (b ? "Yes" : "No") << '\n'; }
+inline void No() { Yes(false); }
+inline void YES(bool b = true) { cout << (b ? "YES" : "NO") << '\n'; }
+inline void NO() { YES(false); }
 
 // 2次元ベクトルの初期化
 template <typename T> vector<vector<T>> vv(int n, int m, T x = T()) {

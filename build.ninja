@@ -1,6 +1,10 @@
 cxx = g++
 cxxflags = -Wall -g -std=c++23
 
+rule assemble
+  command = python3 tools/assemble.py
+  description = Assembling main.cpp from src/
+
 rule compile
   command = $cxx $cxxflags -o $out $in
   description = Compiling $out
@@ -9,14 +13,38 @@ rule compile_test
   command = $cxx $cxxflags -DTESTING -o $out $in
   description = Compiling test $out
 
+build main.cpp: assemble | tools/assemble.py $
+  src/00_headers.hpp $
+  src/01_types.hpp $
+  src/02_constants.hpp $
+  src/03_directions.hpp $
+  src/04_macros.hpp $
+  src/05_debug.hpp $
+  src/06_chminmax.hpp $
+  src/07_fastio.hpp $
+  src/08_input.hpp $
+  src/09_output.hpp $
+  src/10_vv.hpp $
+  src/11_modint.hpp $
+  src/12_math.hpp $
+  src/13_structure.hpp $
+  src/14_binary_search.hpp $
+  src/15_compress.hpp $
+  src/16_cumulative_sum.hpp $
+  src/17_matrix.hpp $
+  src/18_rolling_hash.hpp $
+  src/19_string_algo.hpp $
+  src/20_graph.hpp $
+  src/99_main.hpp
+
 build main.out: compile main.cpp
 
-build tests/test_math.out: compile_test tests/test_math.cpp
-build tests/test_structure.out: compile_test tests/test_structure.cpp
-build tests/test_graph.out: compile_test tests/test_graph.cpp
-build tests/test_string.out: compile_test tests/test_string.cpp
-build tests/test_modint.out: compile_test tests/test_modint.cpp
-build tests/test_misc.out: compile_test tests/test_misc.cpp
+build tests/test_math.out: compile_test tests/test_math.cpp | main.cpp
+build tests/test_structure.out: compile_test tests/test_structure.cpp | main.cpp
+build tests/test_graph.out: compile_test tests/test_graph.cpp | main.cpp
+build tests/test_string.out: compile_test tests/test_string.cpp | main.cpp
+build tests/test_modint.out: compile_test tests/test_modint.cpp | main.cpp
+build tests/test_misc.out: compile_test tests/test_misc.cpp | main.cpp
 
 build tests: phony tests/test_math.out tests/test_structure.out tests/test_graph.out tests/test_string.out tests/test_modint.out tests/test_misc.out
 
