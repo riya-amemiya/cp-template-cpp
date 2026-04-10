@@ -2,12 +2,11 @@
 """
 提出用コードストリッパー
 
-main.cpp のテンプレートからユーザーの解答コードが使っていない
-ブロック(namespace, struct, 関数群)を除去し、最小限のコードを生成する。
+main.cpp の #ifndef TESTING ... #endif ブロック内の解答コードを見て、
+使っていないブロック(namespace, struct, 関数群)を除去し、最小限のコードを生成する。
 
 使い方:
-  python3 tools/strip.py solution.cpp > submission.cpp
-  python3 tools/strip.py < solution.cpp > submission.cpp
+  python3 tools/strip.py > submission.cpp
 
 main.cpp 内の // @begin <name> / // @end <name> マーカーで区切られた
 ブロックを管理し、// @dep <name> で依存関係を宣言する。
@@ -22,14 +21,15 @@ import sys
 from pathlib import Path
 
 
-def parse_template(template_path: str) -> tuple[str, list[dict]]:
-    """main.cpp をパースして、常に含める部分とブロック群を返す"""
+def parse_template(template_path: str) -> tuple[str, list[dict], str]:
+    """main.cpp をパースして、常に含める部分とブロック群、main()コードを返す"""
     lines = Path(template_path).read_text().splitlines()
 
     always_lines = []
     blocks = []
     current_block = None
     in_main = False
+    main_lines = []
 
     for line in lines:
         # @begin マーカー
@@ -66,13 +66,15 @@ def parse_template(template_path: str) -> tuple[str, list[dict]]:
             current_block["lines"].append(line)
             continue
 
-        # #ifndef TESTING のメイン関数ガードをスキップ
+        # #ifndef TESTING のメイン関数ガードを抽出
         if re.match(r"^\s*#ifndef\s+TESTING", line):
             in_main = True
             continue
         if in_main:
             if re.match(r"^\s*#endif", line):
                 in_main = False
+            else:
+                main_lines.append(line)
             continue
 
         if current_block:
@@ -80,7 +82,7 @@ def parse_template(template_path: str) -> tuple[str, list[dict]]:
         else:
             always_lines.append(line)
 
-    return "\n".join(always_lines), blocks
+    return "\n".join(always_lines), blocks, "\n".join(main_lines)
 
 
 def find_needed_blocks(
@@ -140,22 +142,11 @@ def main():
         print(f"Error: {template_path} not found", file=sys.stderr)
         sys.exit(1)
 
-    # 解答コードを読み込み
-    if len(sys.argv) > 1:
-        solution_path = sys.argv[1]
-        solution_code = Path(solution_path).read_text()
-    else:
-        solution_code = sys.stdin.read()
+    # テンプレートをパース (main()コードも抽出)
+    always_code, blocks, main_code = parse_template(str(template_path))
 
-    # テンプレートをパース
-    always_code, blocks = parse_template(str(template_path))
-
-    # 解答コードから main() 関数部分を抽出 (あれば)
-    # main() 以外のコードも含めてマッチング対象にする
-    scan_code = solution_code
-
-    # 必要なブロックを特定
-    needed = find_needed_blocks(scan_code, blocks)
+    # main()コード内の識別子をスキャンして必要なブロックを特定
+    needed = find_needed_blocks(main_code, blocks)
 
     # 出力を組み立て
     output_parts = [always_code.rstrip()]
@@ -166,8 +157,8 @@ def main():
             block_text = "\n".join(b["lines"])
             output_parts.append(block_text)
 
-    # 解答コードの main() を追加
-    output_parts.append(solution_code.rstrip())
+    # main()コードを追加 (#ifndef TESTINGガードなしで)
+    output_parts.append(main_code.rstrip())
 
     output = "\n\n".join(output_parts) + "\n"
 
