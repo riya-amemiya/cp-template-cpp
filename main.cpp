@@ -14,7 +14,6 @@ using vvl = vector<vector<ll>>;
 using vb = vector<bool>;
 using vvb = vector<vector<bool>>;
 using vs = vector<string>;
-// TUNING: 追加の型エイリアス
 using vpii = vector<pii>;
 using vpll = vector<pll>;
 using vld = vector<ld>;
