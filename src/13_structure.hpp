@@ -30,6 +30,24 @@ template <typename T> struct BIT {
 
   // i番目の値をxに更新 (0-indexed)
   void set(int i, T x) { add(i, x - get(i)); }
+
+  // prefix sum >= x となる最小の 0-indexed i。全体和 < x なら n
+  int lower_bound(T x) const {
+    if (x <= 0)
+      return 0;
+    int i = 0;
+    int k = 1;
+    while ((k << 1) <= n)
+      k <<= 1;
+    T s = 0;
+    for (; k > 0; k >>= 1) {
+      if (i + k <= n && s + dat[i + k] < x) {
+        s += dat[i + k];
+        i += k;
+      }
+    }
+    return i;
+  }
 };
 
 // Union-Find木
@@ -37,9 +55,15 @@ struct UnionFind {
   vector<int> d;
   UnionFind(int n = 0) : d(n, -1) {}
   int find(int x) {
-    if (d[x] < 0)
-      return x;
-    return d[x] = find(d[x]);
+    int r = x;
+    while (d[r] >= 0)
+      r = d[r];
+    while (d[x] >= 0) {
+      int p = d[x];
+      d[x] = r;
+      x = p;
+    }
+    return r;
   }
   bool unite(int x, int y) {
     x = find(x);
@@ -100,7 +124,7 @@ template <typename T> struct WeightedUnionFind {
   T diff(int x, int y) { return weight(y) - weight(x); }
 };
 
-// セグメント木
+// セグメント木 (非再帰, ACL と同じ 2n レイアウト)
 template <typename T> struct SegTree {
   using F = function<T(T, T)>;
   int n;
@@ -112,29 +136,44 @@ template <typename T> struct SegTree {
     n = 1;
     while (n < n_)
       n *= 2;
-    dat.assign(2 * n - 1, e);
+    dat.assign(2 * n, e);
+  }
+
+  SegTree(const vector<T> &v, T e_, F f_) : e(e_), f(f_) {
+    int n_ = (int)v.size();
+    n = 1;
+    while (n < n_)
+      n *= 2;
+    dat.assign(2 * n, e);
+    for (int i = 0; i < n_; i++)
+      dat[n + i] = v[i];
+    for (int i = n - 1; i >= 1; i--)
+      dat[i] = f(dat[i << 1], dat[i << 1 | 1]);
   }
 
   void update(int k, T a) {
-    k += n - 1;
+    k += n;
     dat[k] = a;
-    while (k > 0) {
-      k = (k - 1) / 2;
-      dat[k] = f(dat[k * 2 + 1], dat[k * 2 + 2]);
-    }
+    for (k >>= 1; k; k >>= 1)
+      dat[k] = f(dat[k << 1], dat[k << 1 | 1]);
   }
 
-  T query(int a, int b, int k, int l, int r) {
-    if (r <= a || b <= l)
-      return e;
-    if (a <= l && r <= b)
-      return dat[k];
-    T vl = query(a, b, k * 2 + 1, l, (l + r) / 2);
-    T vr = query(a, b, k * 2 + 2, (l + r) / 2, r);
+  T get(int k) const { return dat[k + n]; }
+
+  T query(int a, int b) {
+    T vl = e, vr = e;
+    a += n;
+    b += n;
+    while (a < b) {
+      if (a & 1)
+        vl = f(vl, dat[a++]);
+      if (b & 1)
+        vr = f(dat[--b], vr);
+      a >>= 1;
+      b >>= 1;
+    }
     return f(vl, vr);
   }
-
-  T query(int a, int b) { return query(a, b, 0, 0, n); }
 };
 
 // 遅延伝播セグメント木
@@ -148,7 +187,7 @@ template <typename T, typename U> struct LazySegTree {
   using FTT = function<T(T, T)>;
   using FTU = function<T(T, U)>;
   using FUU = function<U(U, U)>;
-  int n;
+  int n, size, log;
   vector<T> dat;
   vector<U> laz;
   T e;
@@ -158,52 +197,83 @@ template <typename T, typename U> struct LazySegTree {
   FUU h;
 
   LazySegTree(int n_, T e_, U id_, FTT f_, FTU g_, FUU h_)
-      : e(e_), id(id_), f(f_), g(g_), h(h_) {
-    n = 1;
-    while (n < n_)
-      n *= 2;
-    dat.assign(2 * n - 1, e);
-    laz.assign(2 * n - 1, id);
+      : n(n_), e(e_), id(id_), f(f_), g(g_), h(h_) {
+    size = 1;
+    log = 0;
+    while (size < n_) {
+      size <<= 1;
+      log++;
+    }
+    dat.assign(2 * size, e);
+    laz.assign(size, id);
+  }
+
+  void update_node(int k) { dat[k] = f(dat[k << 1], dat[k << 1 | 1]); }
+
+  void all_apply(int k, U x) {
+    dat[k] = g(dat[k], x);
+    if (k < size)
+      laz[k] = h(laz[k], x);
   }
 
   void push(int k) {
     if (laz[k] == id)
       return;
-    dat[k * 2 + 1] = g(dat[k * 2 + 1], laz[k]);
-    dat[k * 2 + 2] = g(dat[k * 2 + 2], laz[k]);
-    laz[k * 2 + 1] = h(laz[k * 2 + 1], laz[k]);
-    laz[k * 2 + 2] = h(laz[k * 2 + 2], laz[k]);
+    all_apply(k << 1, laz[k]);
+    all_apply(k << 1 | 1, laz[k]);
     laz[k] = id;
   }
 
-  void update(int a, int b, U x, int k, int l, int r) {
-    if (r <= a || b <= l)
+  void update(int a, int b, U x) {
+    if (a == b)
       return;
-    if (a <= l && r <= b) {
-      dat[k] = g(dat[k], x);
-      laz[k] = h(laz[k], x);
-      return;
+    a += size;
+    b += size;
+    for (int i = log; i >= 1; i--) {
+      if (((a >> i) << i) != a)
+        push(a >> i);
+      if (((b >> i) << i) != b)
+        push((b - 1) >> i);
     }
-    push(k);
-    update(a, b, x, k * 2 + 1, l, (l + r) / 2);
-    update(a, b, x, k * 2 + 2, (l + r) / 2, r);
-    dat[k] = f(dat[k * 2 + 1], dat[k * 2 + 2]);
+    int l2 = a, r2 = b;
+    while (a < b) {
+      if (a & 1)
+        all_apply(a++, x);
+      if (b & 1)
+        all_apply(--b, x);
+      a >>= 1;
+      b >>= 1;
+    }
+    for (int i = 1; i <= log; i++) {
+      if (((l2 >> i) << i) != l2)
+        update_node(l2 >> i);
+      if (((r2 >> i) << i) != r2)
+        update_node((r2 - 1) >> i);
+    }
   }
 
-  void update(int a, int b, U x) { update(a, b, x, 0, 0, n); }
-
-  T query(int a, int b, int k, int l, int r) {
-    if (r <= a || b <= l)
+  T query(int a, int b) {
+    if (a == b)
       return e;
-    if (a <= l && r <= b)
-      return dat[k];
-    push(k);
-    T vl = query(a, b, k * 2 + 1, l, (l + r) / 2);
-    T vr = query(a, b, k * 2 + 2, (l + r) / 2, r);
+    a += size;
+    b += size;
+    for (int i = log; i >= 1; i--) {
+      if (((a >> i) << i) != a)
+        push(a >> i);
+      if (((b >> i) << i) != b)
+        push((b - 1) >> i);
+    }
+    T vl = e, vr = e;
+    while (a < b) {
+      if (a & 1)
+        vl = f(vl, dat[a++]);
+      if (b & 1)
+        vr = f(dat[--b], vr);
+      a >>= 1;
+      b >>= 1;
+    }
     return f(vl, vr);
   }
-
-  T query(int a, int b) { return query(a, b, 0, 0, n); }
 };
 // Sparse Table (静的RMQ, O(n)構築 O(1)クエリ)
 template <typename T, typename F = function<T(T, T)>> struct SparseTable {

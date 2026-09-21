@@ -19,11 +19,12 @@ Build and run tests:
 ```bash
 ninja tests
 for t in tests/*.out; do ./$t; done
+python3 tests/test_strip.py
 ```
 
 ## Compiler Configuration
 
-The project uses g++ with C++23 standard (`-std=c++23`) and includes `-Wall -g` flags for warnings and debugging.
+The project uses g++ with C++23 (`-std=c++23`) and `-Wall -O2 -g`.
 
 ## Source Structure
 
@@ -45,32 +46,35 @@ Running `ninja` automatically runs assemble before compiling.
 - `04_macros.hpp` - Loop macros (rep, rep1, rep2, rrep, rrep1, fore), container helpers (all, rall, sz, pb, eb, mp, fi, se), convenience macros (Sort, Reverse, Unique)
 - `05_debug.hpp` - Debug macro (`debug(...)` - enabled with `-DLOCAL`, supports pair/vector/set/map/multiset/deque)
 - `06_chminmax.hpp` - `chmin`/`chmax` helpers
-- `07_fastio.hpp` - `fastio()` for I/O optimization
+- `07_fastio.hpp` - `fastio()` (cin を巨大バッファのカスタム streambuf に付け替え)
 - `08_input.hpp` - Input helpers (`input<T>()`, `input_vec<T>(n)`, `input_vec2<T>(n,m)`, quick macros: `INT(...)`, `LL(...)`, `STR(...)`, `CHR(...)`, `DBL(...)`, `VEC(type,name,n)`, `VEC2(type,name,h,w)`)
 - `09_output.hpp` - Output helpers (`print_vec`, `Yes()`, `No()`, `YES()`, `NO()`)
 - `10_vv.hpp` - 2D vector initializer `vv(n, m, val)`
 - `11_modint.hpp` - modint struct with `mint` (MOD=1e9+7) and `mint998` (MOD=998244353)
-- `12_math.hpp` - `math` namespace (pow_mod, is_prime, sieve, prime_list, factorize, divisors, extgcd, combination, crt, floor_sum, euler_totient, euler_totient_table)
+- `12_math.hpp` - `math` namespace (pow_mod, is_prime/Miller-Rabin, sieve_spf, sieve, prime_list, factorize/Pollard, divisors, extgcd, combination, crt, floor_sum, euler_totient, ceil_div, floor_div)
 - `13_structure.hpp` - `structure` namespace (BIT, UnionFind, WeightedUnionFind, SegTree, LazySegTree, SparseTable)
 - `14_binary_search.hpp` - `binary_search` namespace (integer and real binary search)
 - `15_compress.hpp` - Compress (coordinate compression)
 - `16_cumulative_sum.hpp` - CumulativeSum (1D and 2D prefix sums)
 - `17_matrix.hpp` - Matrix (matrix multiplication and exponentiation)
 - `18_rolling_hash.hpp` - RollingHash for string matching
-- `19_string_algo.hpp` - `string_algo` namespace (z_algorithm, kmp_table, kmp_search, suffix_array, lcp_array)
-- `20_graph.hpp` - `graph` namespace (Dijkstra, BFS, Warshall-Floyd, topological sort, Kruskal, LCA, Bellman-Ford, SCC, MaxFlow, EulerTour)
+- `19_string_algo.hpp` - `string_algo` namespace (z_algorithm, kmp_table, kmp_search, suffix_array, lcp_array, manacher)
+- `20_graph.hpp` - `graph` namespace (Dijkstra, BFS, 0-1 BFS, Warshall-Floyd, topological sort, Kruskal, LCA, Bellman-Ford, SCC, MaxFlow, EulerTour, tree_diameter, TwoSat, MinCostFlow)
+- `21_util.hpp` - `argsort`, `rle`, `rotate90`
 - `99_main.hpp` - main() function (guarded by `#ifndef TESTING`)
 
 ## Tests
 
-Tests are in `tests/` directory with one file per feature area. Each test file includes `main.cpp` with `-DTESTING` flag (which guards the template's `main()` function). Test framework is a minimal assertion-based header (`tests/test_helper.hpp`).
+Tests are in `tests/` directory with one file per feature area. Each test file includes `main.cpp` with `-DTESTING` flag (which guards the template's `main()` function). Test framework is a minimal assertion-based header (`tests/test_helper.hpp`). `tests/test_strip.py` covers the submission stripper.
 
 ## Submission Code Stripper
 
-`tools/strip.py` generates minimal submission code by removing unused template blocks:
+`tools/strip.py` walks top-level C++ declarations (including inside namespaces) and keeps only what the solution actually references, so unused type aliases, macros, functions, and structs are dropped for judge character limits.
 
 ```bash
-python3 tools/strip.py solution.cpp > submission.cpp
+python3 tools/strip.py                         # main.cpp を削減して stdout へ
+python3 tools/strip.py solution.cpp -o submission.cpp
+python3 tools/strip.py snippet.cpp             # #include / main が無い断片は main.cpp の main() に挿入してから削減
 ```
 
-Blocks in main.cpp are marked with `// @begin name` / `// @end name` comments. Dependencies are declared with `// @dep name` and exported identifiers with `// @exports id1 id2 ...`.
+stderr に削減前後のバイト数が出る。提出用では `#ifdef LOCAL` は else 側、`#ifndef TESTING` は本体だけ残す。

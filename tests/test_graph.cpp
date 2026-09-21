@@ -182,4 +182,59 @@ TEST(euler_tour_basic) {
   ASSERT_FALSE(et.is_ancestor(2, 3));
 }
 
+TEST(bfs01_basic) {
+  // 0 -0- 1 -1- 2
+  // 0 -1- 2
+  vector<vector<pair<int, int>>> g(3);
+  g[0].push_back({1, 0});
+  g[1].push_back({2, 1});
+  g[0].push_back({2, 1});
+  auto dist = graph::bfs01(g, 0);
+  ASSERT_EQ(dist[0], 0LL);
+  ASSERT_EQ(dist[1], 0LL);
+  ASSERT_EQ(dist[2], 1LL);
+}
+
+TEST(tree_diameter_basic) {
+  // 3-1-0-2-4  diameter 4
+  vector<vector<int>> g(5);
+  auto add = [&](int u, int v) {
+    g[u].push_back(v);
+    g[v].push_back(u);
+  };
+  add(0, 1);
+  add(0, 2);
+  add(1, 3);
+  add(2, 4);
+  auto [diam, uv] = graph::tree_diameter(g);
+  ASSERT_EQ(diam, 4);
+  ASSERT_EQ(graph::LCA(g, 0).dist(uv.first, uv.second), 4);
+}
+
+TEST(twosat_basic) {
+  graph::TwoSat ts(2);
+  ts.add_clause(0, false, 1, true);  // ~x0 or x1
+  ts.add_clause(0, true, 1, true);   // x0 or x1
+  ASSERT_TRUE(ts.satisfiable());
+  ASSERT_TRUE(ts.ans[1]);
+}
+
+TEST(twosat_unsat) {
+  graph::TwoSat ts(1);
+  ts.add_clause(0, true, 0, true);   // x0
+  ts.add_clause(0, false, 0, false); // ~x0
+  ASSERT_FALSE(ts.satisfiable());
+}
+
+TEST(min_cost_flow_basic) {
+  graph::MinCostFlow mcf(4);
+  mcf.add_edge(0, 1, 2, 3);
+  mcf.add_edge(0, 2, 2, 5);
+  mcf.add_edge(1, 3, 2, 1);
+  mcf.add_edge(2, 3, 2, 1);
+  auto [flow, cost] = mcf.min_cost_flow(0, 3, 3);
+  ASSERT_EQ(flow, 3LL);
+  ASSERT_EQ(cost, 14LL); // 2*(3+1) + 1*(5+1)
+}
+
 int main() { RUN_ALL_TESTS(); }

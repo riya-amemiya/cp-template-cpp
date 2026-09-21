@@ -1,5 +1,5 @@
 // @begin string_algo
-// @exports z_algorithm kmp_table kmp_search suffix_array lcp_array
+// @exports z_algorithm kmp_table kmp_search suffix_array lcp_array manacher
 // 文字列アルゴリズム
 namespace string_algo {
 // Z-algorithm: z[i] = s[i..] と s の最長共通接頭辞の長さ
@@ -45,13 +45,24 @@ vector<int> kmp_table(const string &s) {
 
 // KMP法によるパターン検索: text中のpatternの出現位置を返す
 vector<int> kmp_search(const string &text, const string &pattern) {
-  string s = pattern + "$" + text;
-  auto pi = kmp_table(s);
+  if (pattern.empty()) {
+    vector<int> res((int)text.size() + 1);
+    iota(all(res), 0);
+    return res;
+  }
+  auto pi = kmp_table(pattern);
   vector<int> res;
-  int m = pattern.size();
-  for (int i = 2 * m; i < (int)s.size(); i++) {
-    if (pi[i] == m)
-      res.push_back(i - 2 * m);
+  int j = 0;
+  int m = (int)pattern.size();
+  for (int i = 0; i < (int)text.size(); i++) {
+    while (j > 0 && text[i] != pattern[j])
+      j = pi[j - 1];
+    if (text[i] == pattern[j])
+      j++;
+    if (j == m) {
+      res.push_back(i - m + 1);
+      j = pi[j - 1];
+    }
   }
   return res;
 }
@@ -101,6 +112,34 @@ vector<int> lcp_array(const string &s, const vector<int> &sa) {
     }
   }
   return lcp;
+}
+
+// Manacher: 偶数長を '#' で挟んだ文字列上の半径配列 (長さ 2n+1)
+vector<int> manacher(const string &s) {
+  int n = (int)s.size();
+  string t;
+  t.reserve(2 * n + 1);
+  for (int i = 0; i < n; i++) {
+    t.push_back('#');
+    t.push_back(s[i]);
+  }
+  t.push_back('#');
+  int m = (int)t.size();
+  vector<int> r(m);
+  int c = 0, right = 0;
+  for (int i = 0; i < m; i++) {
+    int mirror = 2 * c - i;
+    if (i < right)
+      r[i] = min(right - i, r[mirror]);
+    while (i - r[i] - 1 >= 0 && i + r[i] + 1 < m &&
+           t[i - r[i] - 1] == t[i + r[i] + 1])
+      r[i]++;
+    if (i + r[i] > right) {
+      c = i;
+      right = i + r[i];
+    }
+  }
+  return r;
 }
 } // namespace string_algo
 // @end string_algo

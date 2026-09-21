@@ -56,6 +56,12 @@ TEST(kmp_search_no_match) {
   ASSERT_TRUE(res.empty());
 }
 
+TEST(kmp_search_dollar_in_text) {
+  auto res = string_algo::kmp_search("a$a$a", "a$a");
+  vector<int> expected = {0, 2};
+  ASSERT_EQ(res, expected);
+}
+
 TEST(suffix_array_basic) {
   auto sa = string_algo::suffix_array("banana");
   // Suffixes sorted: "a"(5), "ana"(3), "anana"(1), "banana"(0), "na"(4),
@@ -76,6 +82,18 @@ TEST(lcp_array_basic) {
   // "na" vs "nana" = 2
   vector<int> expected = {1, 3, 0, 0, 2};
   ASSERT_EQ(lcp, expected);
+}
+
+TEST(manacher_odd_even) {
+  auto r = string_algo::manacher("aba");
+  // t = # a # b # a #
+  //     0 1 2 3 4 5 6
+  ASSERT_EQ((int)r.size(), 7);
+  ASSERT_EQ(r[3], 3); // center 'b' covers whole "aba"
+  ASSERT_EQ(r[1], 1); // 'a'
+  auto r2 = string_algo::manacher("aa");
+  // t = # a # a #
+  ASSERT_EQ(r2[2], 2); // even palindrome "aa" centered at '#'
 }
 
 int main() { RUN_ALL_TESTS(); }

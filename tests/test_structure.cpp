@@ -18,6 +18,24 @@ TEST(BIT_basic) {
   ASSERT_EQ(bit.sum(5), 23LL);
 }
 
+TEST(BIT_lower_bound) {
+  structure::BIT<ll> bit(5);
+  bit.add(0, 3);
+  bit.add(1, 5);
+  bit.add(2, 7);
+  bit.add(3, 1);
+  bit.add(4, 4);
+  // prefix: 3, 8, 15, 16, 20
+  ASSERT_EQ(bit.lower_bound(1), 0);
+  ASSERT_EQ(bit.lower_bound(3), 0);
+  ASSERT_EQ(bit.lower_bound(4), 1);
+  ASSERT_EQ(bit.lower_bound(15), 2);
+  ASSERT_EQ(bit.lower_bound(16), 3);
+  ASSERT_EQ(bit.lower_bound(20), 4);
+  ASSERT_EQ(bit.lower_bound(21), 5);
+  ASSERT_EQ(bit.lower_bound(0), 0);
+}
+
 TEST(UnionFind_basic) {
   structure::UnionFind uf(5);
   ASSERT_FALSE(uf.same(0, 1));
@@ -88,6 +106,17 @@ TEST(SparseTable_min) {
   ASSERT_EQ(st.query(3, 6), 1);
   ASSERT_EQ(st.query(4, 7), 2);
   ASSERT_EQ(st.query(0, 1), 5);
+}
+
+TEST(SegTree_from_vector) {
+  vector<int> v = {3, 1, 4, 1, 5};
+  structure::SegTree<int> seg(v, INF, [](int a, int b) { return min(a, b); });
+  ASSERT_EQ(seg.query(0, 5), 1);
+  ASSERT_EQ(seg.query(0, 1), 3);
+  ASSERT_EQ(seg.get(2), 4);
+  seg.update(1, 10);
+  ASSERT_EQ(seg.query(0, 5), 1);
+  ASSERT_EQ(seg.get(1), 10);
 }
 
 int main() { RUN_ALL_TESTS(); }

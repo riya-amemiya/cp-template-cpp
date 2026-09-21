@@ -7,11 +7,11 @@ struct RollingHash {
   const uint64_t base;
 
   static uint64_t multiply(uint64_t a, uint64_t b) {
-    uint64_t au = a >> 31, ad = a & ((1ull << 31) - 1);
-    uint64_t bu = b >> 31, bd = b & ((1ull << 31) - 1);
-    uint64_t mid = au * bd + ad * bu;
-    uint64_t midu = mid >> 30, midd = mid & ((1ull << 30) - 1);
-    return au * bu * 2 + midu + (midd << 31) + ad * bd;
+    __uint128_t t = (__uint128_t)a * b;
+    t = (t >> 61) + (t & mod);
+    if (t >= mod)
+      t -= mod;
+    return (uint64_t)t;
   }
 
   static uint64_t calc_mod(uint64_t x) {

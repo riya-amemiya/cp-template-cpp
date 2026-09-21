@@ -3,3 +3,5 @@ main.out.dSYM/
 main.out
 .ninja_log
 tests/*.out
+__pycache__/
+*.pyc

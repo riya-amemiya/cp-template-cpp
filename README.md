@@ -2,10 +2,20 @@
 
 C++23 競技プログラミングテンプレート (AtCoder 等向け)
 
+提出時は未使用宣言を削る:
+
+```bash
+python3 tools/strip.py > submission.cpp
+python3 tools/strip.py solution.cpp -o submission.cpp
+```
+
+空の `main` ならテンプレート全体から約 98% 削減される。解答が参照している `using` / マクロ / 関数 / struct だけが残る。
+
 ---
 
 ## 目次
 
+- [提出用ストリッパー](#提出用ストリッパー)
 - [型エイリアス](#型エイリアス)
 - [定数](#定数)
 - [マクロ](#マクロ)
@@ -17,8 +27,25 @@ C++23 競技プログラミングテンプレート (AtCoder 等向け)
 - [座標圧縮 Compress](#座標圧縮-compress)
 - [累積和](#累積和)
 - [ローリングハッシュ RollingHash](#ローリングハッシュ-rollinghash)
+- [文字列アルゴリズム](#文字列アルゴリズム)
 - [graph 名前空間](#graph-名前空間)
 - [依存関係マップ](#依存関係マップ)
+
+---
+
+## 提出用ストリッパー
+
+`tools/strip.py` は C++ のトップレベル宣言（namespace 内を含む）を走査し、`main` から到達しない識別子を削除する。
+
+| 入力 | 動作 |
+|---|---|
+| 引数なし | プロジェクトの `main.cpp` を削減 |
+| `#include` または `int main` があるファイル | そのファイルを削減 |
+| 断片 (本体だけ) | `main.cpp` の `fastio();` の直後に挿入してから削減 |
+
+```bash
+python3 tools/strip.py -o submission.cpp
+```
 
 ---
 
@@ -112,7 +139,7 @@ chmax(ans, val);
 
 ### fastio
 
-入力が大量にある問題では必ず冒頭で呼ぶ。`endl` をマクロで `'\n'` に置き換えているので合わせて使う。
+入力が大量にある問題では必ず冒頭で呼ぶ。`cin` を 1MiB バッファのカスタム streambuf に付け替える。`endl` をマクロで `'\n'` に置き換えているので合わせて使う。
 
 ```cpp
 fastio();
@@ -140,6 +167,15 @@ print_vec(v, "\n");     // 1 行 1 要素で出力したい時
 ```cpp
 auto dp = vv<ll>(n, m, LINF);   // n×m の DP テーブルを LINF で初期化
 auto g  = vv<int>(n, n, INF);   // グラフの距離行列を INF で初期化
+```
+
+### argsort / RLE / グリッド回転
+
+```cpp
+auto idx = argsort(a);          // a[idx[0]] <= a[idx[1]] <= ... (安定)
+auto enc = rle(a);              // {(値, 長さ), ...}
+auto encs = rle(s);             // 文字列版
+auto b = rotate90(grid);        // 時計回り 90°
 ```
 
 ---
@@ -244,6 +280,26 @@ ll p = C.perm(n, k);          // nPk mod MOD、O(1)
 > **使う場面**: 場合の数の DP、確率・期待値問題、二項係数を何度も使う問題
 > **注意**: `MOD` がデフォルト。問題によって `combination C(n, MOD998)` と指定可能
 
+### ceil_div / floor_div
+
+負数でも数学的な天井・床になる除算。`a / b` のゼロ方向切り捨てとは違う。
+
+```cpp
+ll x = math::ceil_div(10, 3);   // 4
+ll y = math::floor_div(-10, 3); // -4
+```
+
+### sieve_spf
+
+線形篩で最小素因数テーブルを O(n) で作る。多数の整数を素因数分解するときに使う。
+
+```cpp
+auto spf = math::sieve_spf(n);
+int p = spf[x];  // x の最小素因数
+```
+
+`is_prime` は 64bit 決定的 Miller-Rabin。`factorize` は小さい因数を試し割りし、残りを Pollard's Rho で分解する（n ≤ 1e18）。
+
 ---
 
 ## structure 名前空間
@@ -258,6 +314,7 @@ bit.add(i, x);       // i 番目 (0-indexed) に x を加算
 bit.sum(l, r);       // [l, r) の総和
 bit.get(i);          // i 番目の値を取得
 bit.set(i, x);       // i 番目の値を x に更新
+bit.lower_bound(x);  // prefix sum >= x となる最小の i。無ければ n
 ```
 
 > **使う場面**:
@@ -314,9 +371,11 @@ structure::SegTree<ll> seg(n, LINF, [](ll a, ll b){ return min(a, b); });
 structure::SegTree<ll> seg(n, 0LL, [](ll a, ll b){ return a + b; });
 // 例3: 区間最大値
 structure::SegTree<ll> seg(n, -LINF, [](ll a, ll b){ return max(a, b); });
+structure::SegTree<ll> seg(v, 0LL, [](ll a, ll b){ return a + b; }); // 配列から構築
 
 seg.update(i, val);  // i 番目を val に更新 (0-indexed)
 seg.query(l, r);     // [l, r) の演算結果
+seg.get(i);          // i 番目の値
 ```
 
 > **使う場面**:
@@ -461,6 +520,17 @@ uint64_t combined = RollingHash::connect(h1, h2, len2);
 >
 > **注意**: 多倍長ハッシュを使いたい場合は base を 2 つ用意して両方一致を確認する
 
+## 文字列アルゴリズム
+
+```cpp
+auto z = string_algo::z_algorithm(s);
+auto pi = string_algo::kmp_table(pat);
+auto pos = string_algo::kmp_search(text, pat);  // 出現開始位置
+auto sa = string_algo::suffix_array(s);
+auto lcp = string_algo::lcp_array(s, sa);
+auto rad = string_algo::manacher(s);  // '#' 挟み込み後の半径配列 (長さ 2n+1)
+```
+
 ---
 
 ## graph 名前空間
@@ -491,6 +561,7 @@ auto dist = graph::dijkstra(g, s);  // dist[v] = s→v の最短距離（未到�
 ```cpp
 // g[v] = {隣接頂点, ...}
 auto dist = graph::bfs(g, s);  // dist[v] = s→v の最短距離（辺数）、未到達は -1
+auto dist01 = graph::bfs01(g01, s);  // 辺重み 0/1。g01[v] = {(u, w), ...}
 ```
 
 > **使う場面**:
@@ -581,6 +652,30 @@ int dep = lca.depth[v];      // v の深さ（根からの距離）
 >
 > **前計算**: O(n log n)、**クエリ**: O(log n)
 
+### tree_diameter
+
+```cpp
+auto [diam, uv] = graph::tree_diameter(g);  // 長さと端点
+```
+
+### TwoSat
+
+```cpp
+graph::TwoSat ts(n);
+ts.add_clause(i, true, j, false);  // x_i ∨ ¬x_j
+if (ts.satisfiable()) {
+    bool xi = ts.ans[i];
+}
+```
+
+### MinCostFlow
+
+```cpp
+graph::MinCostFlow mcf(n);
+mcf.add_edge(u, v, cap, cost);
+auto [flow, cost] = mcf.min_cost_flow(s, t, maxf);
+```
+
 ---
 
 ## 依存関係マップ
@@ -602,10 +697,16 @@ graph TD
     RH["RollingHash"]
     DIJKSTRA["graph::dijkstra"]
     BFS["graph::bfs"]
+    BFS01["graph::bfs01"]
     WF["graph::warshall_floyd"]
     TOPO["graph::topological_sort"]
+    TWOSAT["graph::TwoSat"]
+    MCF["graph::MinCostFlow"]
+    DIAM["graph::tree_diameter"]
 
     KRUSKAL --> UF
     COMB --> MODINT
     LCA --> BFS
+    TWOSAT --> SCC["graph::scc"]
+    DIAM --> BFS
 ```
