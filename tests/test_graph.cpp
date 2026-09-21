@@ -213,8 +213,8 @@ TEST(tree_diameter_basic) {
 
 TEST(twosat_basic) {
   graph::TwoSat ts(2);
-  ts.add_clause(0, false, 1, true);  // ~x0 or x1
-  ts.add_clause(0, true, 1, true);   // x0 or x1
+  ts.add_clause(0, false, 1, true); // ~x0 or x1
+  ts.add_clause(0, true, 1, true);  // x0 or x1
   ASSERT_TRUE(ts.satisfiable());
   ASSERT_TRUE(ts.ans[1]);
 }

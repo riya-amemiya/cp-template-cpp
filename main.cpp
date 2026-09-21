@@ -298,8 +298,9 @@ using mint998 = modint<MOD998>;
 // @end modint
 
 // @begin math
-// @exports pow_mod is_prime miller_rabin sieve_spf sieve prime_list factorize divisors extgcd
-// combination crt floor_sum euler_totient euler_totient_table floor_div ceil_div mul_mod pollard 数学関連の関数群
+// @exports pow_mod is_prime miller_rabin sieve_spf sieve prime_list factorize
+// divisors extgcd combination crt floor_sum euler_totient euler_totient_table
+// floor_div ceil_div mul_mod pollard 数学関連の関数群
 namespace math {
 ll mul_mod(ll a, ll b, ll m) { return (ll)((__int128)a * b % m); }
 
@@ -342,7 +343,8 @@ bool miller_rabin(ll n) {
     }
     return true;
   };
-  for (ll a : {2LL, 325LL, 9375LL, 28178LL, 450775LL, 9780504LL, 1795265022LL}) {
+  for (ll a :
+       {2LL, 325LL, 9375LL, 28178LL, 450775LL, 9780504LL, 1795265022LL}) {
     if (a % n == 0)
       return true;
     if (witness(a))
@@ -365,7 +367,7 @@ vector<int> sieve_spf(int n) {
     for (int p : primes) {
       if (p > spf[i] || (ll)p * i > n)
         break;
-      spf[p * i] = p;
+      spf[(size_t)p * (size_t)i] = p;
     }
   }
   return spf;
@@ -1262,7 +1264,8 @@ vector<int> manacher(const string &s) {
 // @begin graph
 // @dep structure
 // @exports dijkstra bfs bfs01 warshall_floyd topological_sort kruskal LCA
-// bellman_ford scc MaxFlow EulerTour tree_diameter TwoSat MinCostFlow グラフ関連
+// bellman_ford scc MaxFlow EulerTour tree_diameter TwoSat MinCostFlow
+// グラフ関連
 namespace graph {
 // ダイクストラ法
 vector<ll> dijkstra(const vector<vector<pair<int, ll>>> &g, int s) {
@@ -1722,9 +1725,8 @@ struct MinCostFlow {
 template <typename T> vector<int> argsort(const vector<T> &v) {
   vector<int> idx(sz(v));
   iota(all(idx), 0);
-  sort(all(idx), [&](int i, int j) {
-    return v[i] < v[j] || (v[i] == v[j] && i < j);
-  });
+  sort(all(idx),
+       [&](int i, int j) { return v[i] < v[j] || (v[i] == v[j] && i < j); });
   return idx;
 }
 

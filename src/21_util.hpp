@@ -3,9 +3,8 @@
 template <typename T> vector<int> argsort(const vector<T> &v) {
   vector<int> idx(sz(v));
   iota(all(idx), 0);
-  sort(all(idx), [&](int i, int j) {
-    return v[i] < v[j] || (v[i] == v[j] && i < j);
-  });
+  sort(all(idx),
+       [&](int i, int j) { return v[i] < v[j] || (v[i] == v[j] && i < j); });
   return idx;
 }
 

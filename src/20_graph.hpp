@@ -1,7 +1,8 @@
 // @begin graph
 // @dep structure
 // @exports dijkstra bfs bfs01 warshall_floyd topological_sort kruskal LCA
-// bellman_ford scc MaxFlow EulerTour tree_diameter TwoSat MinCostFlow グラフ関連
+// bellman_ford scc MaxFlow EulerTour tree_diameter TwoSat MinCostFlow
+// グラフ関連
 namespace graph {
 // ダイクストラ法
 vector<ll> dijkstra(const vector<vector<pair<int, ll>>> &g, int s) {
