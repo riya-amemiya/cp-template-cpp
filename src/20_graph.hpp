@@ -1,7 +1,8 @@
 // @begin graph
 // @dep structure
-// @exports dijkstra bfs warshall_floyd topological_sort kruskal LCA
-// bellman_ford scc MaxFlow EulerTour グラフ関連
+// @exports dijkstra bfs bfs01 warshall_floyd topological_sort kruskal LCA
+// bellman_ford scc MaxFlow EulerTour tree_diameter TwoSat MinCostFlow
+// グラフ関連
 namespace graph {
 // ダイクストラ法
 vector<ll> dijkstra(const vector<vector<pair<int, ll>>> &g, int s) {
@@ -40,6 +41,29 @@ vector<int> bfs(const vector<vector<int>> &g, int s) {
         continue;
       dist[u] = dist[v] + 1;
       que.push(u);
+    }
+  }
+  return dist;
+}
+
+// 0-1 BFS (辺重みが 0 または 1)
+vector<ll> bfs01(const vector<vector<pair<int, int>>> &g, int s) {
+  int n = g.size();
+  vector<ll> dist(n, LINF);
+  deque<int> que;
+  dist[s] = 0;
+  que.push_back(s);
+  while (!que.empty()) {
+    int v = que.front();
+    que.pop_front();
+    for (auto [u, w] : g[v]) {
+      if (dist[u] > dist[v] + w) {
+        dist[u] = dist[v] + w;
+        if (w == 0)
+          que.push_front(u);
+        else
+          que.push_back(u);
+      }
     }
   }
   return dist;
@@ -186,7 +210,7 @@ vector<ll> bellman_ford(int n, const vector<tuple<int, int, ll>> &edges,
   return dist;
 }
 
-// 強連結成分分解 (SCC) - Kosaraju's algorithm
+// 強連結成分分解 (SCC) - 非再帰 Kosaraju
 // 返り値: comp[v] = 頂点vが属するSCC番号 (トポロジカル順)
 vector<int> scc(const vector<vector<int>> &g) {
   int n = g.size();
@@ -196,32 +220,46 @@ vector<int> scc(const vector<vector<int>> &g) {
       rg[u].push_back(v);
 
   vector<int> order, comp(n, -1);
-  vector<bool> visited(n, false);
+  vector<char> vis(n, 0);
+  for (int i = 0; i < n; i++) {
+    if (vis[i])
+      continue;
+    vector<pair<int, int>> st;
+    st.emplace_back(i, 0);
+    vis[i] = 1;
+    while (!st.empty()) {
+      auto &[v, it] = st.back();
+      if (it < (int)g[v].size()) {
+        int u = g[v][it++];
+        if (!vis[u]) {
+          vis[u] = 1;
+          st.emplace_back(u, 0);
+        }
+      } else {
+        order.push_back(v);
+        st.pop_back();
+      }
+    }
+  }
 
-  // 1回目のDFS: 帰りがけ順を記録
-  auto dfs1 = [&](auto &self, int v) -> void {
-    visited[v] = true;
-    for (int u : g[v])
-      if (!visited[u])
-        self(self, u);
-    order.push_back(v);
-  };
-  for (int i = 0; i < n; i++)
-    if (!visited[i])
-      dfs1(dfs1, i);
-
-  // 2回目のDFS: 逆グラフ上で帰りがけ順の逆順に探索
   int cnt = 0;
-  auto dfs2 = [&](auto &self, int v, int c) -> void {
-    comp[v] = c;
-    for (int u : rg[v])
-      if (comp[u] == -1)
-        self(self, u, c);
-  };
-  for (int i = n - 1; i >= 0; i--)
-    if (comp[order[i]] == -1)
-      dfs2(dfs2, order[i], cnt++);
-
+  for (int i = n - 1; i >= 0; i--) {
+    int s = order[i];
+    if (comp[s] != -1)
+      continue;
+    vector<int> st = {s};
+    comp[s] = cnt;
+    while (!st.empty()) {
+      int v = st.back();
+      st.pop_back();
+      for (int u : rg[v])
+        if (comp[u] == -1) {
+          comp[u] = cnt;
+          st.push_back(u);
+        }
+    }
+    cnt++;
+  }
   return comp;
 }
 
@@ -290,27 +328,130 @@ struct MaxFlow {
   }
 };
 
-// オイラーツアー (部分木クエリ用)
+// オイラーツアー (部分木クエリ用, 非再帰)
 struct EulerTour {
   vector<int> in, out;
   int timer;
 
   EulerTour(const vector<vector<int>> &g, int root = 0)
       : in(g.size()), out(g.size()), timer(0) {
-    dfs(g, root, -1);
-  }
-
-  void dfs(const vector<vector<int>> &g, int v, int p) {
-    in[v] = timer++;
-    for (int u : g[v])
-      if (u != p)
-        dfs(g, u, v);
-    out[v] = timer;
+    int n = (int)g.size();
+    vector<int> it(n, 0), par(n, -1);
+    vector<int> st;
+    st.push_back(root);
+    in[root] = timer++;
+    while (!st.empty()) {
+      int v = st.back();
+      if (it[v] < (int)g[v].size()) {
+        int u = g[v][it[v]++];
+        if (u == par[v])
+          continue;
+        par[u] = v;
+        in[u] = timer++;
+        st.push_back(u);
+      } else {
+        out[v] = timer;
+        st.pop_back();
+      }
+    }
   }
 
   // 頂点vの部分木は [in[v], out[v]) に対応
   bool is_ancestor(int u, int v) const {
     return in[u] <= in[v] && out[v] <= out[u];
+  }
+};
+
+// 木の直径: {長さ, {端点 u, v}}
+pair<int, pii> tree_diameter(const vector<vector<int>> &g) {
+  auto farthest = [&](int s) {
+    auto d = bfs(g, s);
+    int u = s;
+    for (int i = 0; i < (int)d.size(); i++)
+      if (d[i] >= 0 && d[i] > d[u])
+        u = i;
+    return pair<int, int>{u, d[u]};
+  };
+  int u = farthest(0).first;
+  auto [v, diam] = farthest(u);
+  return {diam, {u, v}};
+}
+
+// 2-SAT (x_i = f) ∨ (x_j = g)
+struct TwoSat {
+  int n;
+  vector<vector<int>> g;
+  vector<bool> ans;
+  TwoSat(int n_ = 0) : n(n_), g(2 * n_), ans(n_) {}
+  void add_clause(int i, bool f, int j, bool gj) {
+    g[2 * i + !f].push_back(2 * j + gj);
+    g[2 * j + !gj].push_back(2 * i + f);
+  }
+  bool satisfiable() {
+    auto id = scc(g);
+    for (int i = 0; i < n; i++) {
+      if (id[2 * i] == id[2 * i + 1])
+        return false;
+      ans[i] = id[2 * i] < id[2 * i + 1];
+    }
+    return true;
+  }
+};
+
+// 最小費用流 (ポテンシャル付き Dijkstra)
+struct MinCostFlow {
+  struct Edge {
+    int to, rev;
+    ll cap, cost;
+  };
+  int n;
+  vector<vector<Edge>> g;
+  MinCostFlow(int n_) : n(n_), g(n_) {}
+  void add_edge(int from, int to, ll cap, ll cost) {
+    g[from].push_back({to, (int)g[to].size(), cap, cost});
+    g[to].push_back({from, (int)g[from].size() - 1, 0, -cost});
+  }
+  pair<ll, ll> min_cost_flow(int s, int t, ll maxf) {
+    ll flow = 0, cost = 0;
+    vector<ll> h(n, 0), dist(n);
+    vector<int> prevv(n), preve(n);
+    while (flow < maxf) {
+      fill(all(dist), LINF);
+      dist[s] = 0;
+      priority_queue<pair<ll, int>, vector<pair<ll, int>>, greater<>> que;
+      que.push({0, s});
+      while (!que.empty()) {
+        auto [d, v] = que.top();
+        que.pop();
+        if (dist[v] < d)
+          continue;
+        for (int i = 0; i < (int)g[v].size(); i++) {
+          Edge &e = g[v][i];
+          if (e.cap > 0 && dist[e.to] > dist[v] + e.cost + h[v] - h[e.to]) {
+            dist[e.to] = dist[v] + e.cost + h[v] - h[e.to];
+            prevv[e.to] = v;
+            preve[e.to] = i;
+            que.push({dist[e.to], e.to});
+          }
+        }
+      }
+      if (dist[t] == LINF)
+        break;
+      for (int v = 0; v < n; v++)
+        if (dist[v] < LINF)
+          h[v] += dist[v];
+      ll d = maxf - flow;
+      for (int v = t; v != s; v = prevv[v])
+        chmin(d, g[prevv[v]][preve[v]].cap);
+      flow += d;
+      cost += d * h[t];
+      for (int v = t; v != s; v = prevv[v]) {
+        Edge &e = g[prevv[v]][preve[v]];
+        e.cap -= d;
+        g[v][e.rev].cap += d;
+      }
+    }
+    return {flow, cost};
   }
 };
 } // namespace graph

@@ -4,7 +4,17 @@
 template <int MOD_> struct modint {
   static constexpr int MOD = MOD_;
   ll x;
-  modint(ll x_ = 0) : x((x_ % MOD + MOD) % MOD) {}
+  modint(ll x_ = 0) {
+    if (x_ < 0) {
+      x = x_ % MOD;
+      if (x < 0)
+        x += MOD;
+    } else if (x_ >= MOD) {
+      x = x_ % MOD;
+    } else {
+      x = x_;
+    }
+  }
   modint operator-() const { return modint(-x); }
   modint &operator+=(const modint &a) {
     if ((x += a.x) >= MOD)

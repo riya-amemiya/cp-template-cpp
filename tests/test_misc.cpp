@@ -125,4 +125,37 @@ TEST(vv_helper) {
   ASSERT_EQ(v[2][3], -1);
 }
 
+TEST(argsort_basic) {
+  vector<int> v = {5, 1, 3, 1};
+  auto idx = argsort(v);
+  vector<int> expected = {1, 3, 2, 0};
+  ASSERT_EQ(idx, expected);
+}
+
+TEST(rle_vector_and_string) {
+  vector<int> v = {1, 1, 2, 2, 2, 1};
+  auto enc = rle(v);
+  ASSERT_EQ((int)enc.size(), 3);
+  ASSERT_EQ(enc[0], (pair<int, int>{1, 2}));
+  ASSERT_EQ(enc[1], (pair<int, int>{2, 3}));
+  ASSERT_EQ(enc[2], (pair<int, int>{1, 1}));
+
+  auto encs = rle(string("aabccc"));
+  ASSERT_EQ((int)encs.size(), 3);
+  ASSERT_EQ(encs[0], (pair<char, int>{'a', 2}));
+  ASSERT_EQ(encs[1], (pair<char, int>{'b', 1}));
+  ASSERT_EQ(encs[2], (pair<char, int>{'c', 3}));
+}
+
+TEST(rotate90_basic) {
+  vector<vector<int>> a = {{1, 2, 3}, {4, 5, 6}};
+  auto b = rotate90(a);
+  ASSERT_EQ((int)b.size(), 3);
+  ASSERT_EQ((int)b[0].size(), 2);
+  ASSERT_EQ(b[0][0], 4);
+  ASSERT_EQ(b[0][1], 1);
+  ASSERT_EQ(b[1][0], 5);
+  ASSERT_EQ(b[2][1], 3);
+}
+
 int main() { RUN_ALL_TESTS(); }

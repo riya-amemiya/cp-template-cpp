@@ -1,5 +1,5 @@
 cxx = g++
-cxxflags = -Wall -g -std=c++23
+cxxflags = -Wall -O2 -g -std=c++23
 
 rule assemble
   command = python3 tools/assemble.py
@@ -35,6 +35,7 @@ build main.cpp: assemble | tools/assemble.py $
   src/18_rolling_hash.hpp $
   src/19_string_algo.hpp $
   src/20_graph.hpp $
+  src/21_util.hpp $
   src/99_main.hpp
 
 build main.out: compile main.cpp

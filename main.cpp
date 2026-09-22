@@ -140,9 +140,23 @@ template <typename T> bool chmax(T &a, const T &b) {
 }
 
 // 入出力の高速化
+struct FastStdinBuf : std::streambuf {
+  static constexpr size_t SZ = 1 << 20;
+  std::vector<char> buf;
+  FastStdinBuf() : buf(SZ) { setg(buf.data(), buf.data(), buf.data()); }
+  int underflow() override {
+    size_t nread = std::fread(buf.data(), 1, SZ, stdin);
+    if (nread == 0)
+      return traits_type::eof();
+    setg(buf.data(), buf.data(), buf.data() + nread);
+    return traits_type::to_int_type(*gptr());
+  }
+};
 void fastio() {
-  cin.tie(nullptr);
   ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  static FastStdinBuf inbuf;
+  cin.rdbuf(&inbuf);
   cout << fixed << setprecision(20);
 }
 
@@ -226,7 +240,17 @@ template <typename T> vector<vector<T>> vv(int n, int m, T x = T()) {
 template <int MOD_> struct modint {
   static constexpr int MOD = MOD_;
   ll x;
-  modint(ll x_ = 0) : x((x_ % MOD + MOD) % MOD) {}
+  modint(ll x_ = 0) {
+    if (x_ < 0) {
+      x = x_ % MOD;
+      if (x < 0)
+        x += MOD;
+    } else if (x_ >= MOD) {
+      x = x_ % MOD;
+    } else {
+      x = x_;
+    }
+  }
   modint operator-() const { return modint(-x); }
   modint &operator+=(const modint &a) {
     if ((x += a.x) >= MOD)
@@ -274,72 +298,163 @@ using mint998 = modint<MOD998>;
 // @end modint
 
 // @begin math
-// @exports pow_mod is_prime sieve prime_list factorize divisors extgcd
-// combination crt floor_sum euler_totient euler_totient_table 数学関連の関数群
+// @exports pow_mod is_prime miller_rabin sieve_spf sieve prime_list factorize
+// divisors extgcd combination crt floor_sum euler_totient euler_totient_table
+// floor_div ceil_div mul_mod pollard 数学関連の関数群
 namespace math {
-// 高速な累乗計算 (繰り返し二乗法)
+ll mul_mod(ll a, ll b, ll m) { return (ll)((__int128)a * b % m); }
+
+// 高速な累乗計算 (繰り返し二乗法, __int128 でオーバーフロー回避)
 template <typename T> T pow_mod(T a, T n, T m) {
-  T ret = 1;
+  T ret = 1 % m;
+  a %= m;
+  if (a < 0)
+    a += m;
   while (n > 0) {
     if (n & 1)
-      ret = (ret * a) % m;
-    a = (a * a) % m;
+      ret = (T)((__int128)ret * a % m);
+    a = (T)((__int128)a * a % m);
     n >>= 1;
   }
   return ret;
 }
 
-// 素数判定 (試し割り法, O(√n))
-bool is_prime(ll n) {
-  if (n <= 1)
+bool miller_rabin(ll n) {
+  if (n < 2)
     return false;
-  if (n == 2)
-    return true;
   if (n % 2 == 0)
-    return false;
-  for (ll i = 3; i * i <= n; i += 2) {
-    if (n % i == 0)
+    return n == 2;
+  ll d = n - 1;
+  int s = 0;
+  while ((d & 1) == 0) {
+    d >>= 1;
+    s++;
+  }
+  auto witness = [&](ll a) {
+    if (a % n == 0)
+      return false;
+    ll x = pow_mod<ll>(a % n, d, n);
+    if (x == 1 || x == n - 1)
+      return false;
+    for (int r = 1; r < s; r++) {
+      x = mul_mod(x, x, n);
+      if (x == n - 1)
+        return false;
+    }
+    return true;
+  };
+  for (ll a :
+       {2LL, 325LL, 9375LL, 28178LL, 450775LL, 9780504LL, 1795265022LL}) {
+    if (a % n == 0)
+      return true;
+    if (witness(a))
       return false;
   }
   return true;
 }
 
-// エラトステネスの篩
-vector<bool> sieve(int n) {
-  vector<bool> is_p(n + 1, true);
-  is_p[0] = is_p[1] = false;
-  for (int i = 2; (ll)i * i <= n; i++)
-    if (is_p[i])
-      for (int j = i * i; j <= n; j += i)
-        is_p[j] = false;
+// 素数判定 (64bit 決定的 Miller-Rabin)
+bool is_prime(ll n) { return miller_rabin(n); }
+
+// 線形篩: 最小素因数テーブル O(n)
+vector<int> sieve_spf(int n) {
+  vector<int> spf(n + 1), primes;
+  for (int i = 2; i <= n; i++) {
+    if (spf[i] == 0) {
+      spf[i] = i;
+      primes.push_back(i);
+    }
+    for (int p : primes) {
+      if (p > spf[i] || (ll)p * i > n)
+        break;
+      spf[(size_t)p * (size_t)i] = p;
+    }
+  }
+  return spf;
+}
+
+// エラトステネスの篩 (線形篩)
+vector<char> sieve(int n) {
+  auto spf = sieve_spf(n);
+  vector<char> is_p(n + 1, 0);
+  for (int i = 2; i <= n; i++)
+    is_p[i] = spf[i] == i;
   return is_p;
 }
 
 // エラトステネスの篩で素数リストを返す
 vector<int> prime_list(int n) {
-  auto is_p = sieve(n);
+  auto spf = sieve_spf(n);
   vector<int> primes;
   for (int i = 2; i <= n; i++)
-    if (is_p[i])
+    if (spf[i] == i)
       primes.push_back(i);
   return primes;
 }
 
-// 素因数分解 O(√n)
+ll pollard(ll n) {
+  if (n % 2 == 0)
+    return 2;
+  if (n % 3 == 0)
+    return 3;
+  ll c = 1;
+  while (true) {
+    auto f = [&](ll x) { return (mul_mod(x, x, n) + c) % n; };
+    ll x = 2, y = 2, d = 1;
+    while (d == 1) {
+      x = f(x);
+      y = f(f(y));
+      ll diff = x > y ? x - y : y - x;
+      d = std::gcd(diff, n);
+    }
+    if (d != n)
+      return d;
+    c++;
+  }
+}
+
+// 素因数分解 (小さい因数は試し割り、残りは Pollard's Rho)
 vector<pair<ll, int>> factorize(ll n) {
   vector<pair<ll, int>> res;
-  for (ll i = 2; i * i <= n; i++) {
-    if (n % i == 0) {
-      int cnt = 0;
-      while (n % i == 0) {
-        n /= i;
-        cnt++;
-      }
-      res.emplace_back(i, cnt);
+  if (n <= 1)
+    return res;
+  auto bump = [&](ll p) {
+    int cnt = 0;
+    while (n % p == 0) {
+      n /= p;
+      cnt++;
     }
+    if (cnt)
+      res.emplace_back(p, cnt);
+  };
+  bump(2);
+  bump(3);
+  for (ll p = 5; p * p <= n && p <= 1000000; p += 6) {
+    bump(p);
+    bump(p + 2);
   }
-  if (n > 1)
-    res.emplace_back(n, 1);
+  if (n == 1)
+    return res;
+  vector<ll> extra;
+  auto rec = [&](auto &&self, ll x) -> void {
+    if (x == 1)
+      return;
+    if (is_prime(x)) {
+      extra.push_back(x);
+      return;
+    }
+    ll d = pollard(x);
+    self(self, d);
+    self(self, x / d);
+  };
+  rec(rec, n);
+  sort(all(extra));
+  for (ll p : extra) {
+    if (!res.empty() && res.back().first == p)
+      res.back().second++;
+    else
+      res.emplace_back(p, 1);
+  }
   return res;
 }
 
@@ -449,6 +564,20 @@ ll euler_totient(ll n) {
   return res;
 }
 
+// 負数対応の floor/ceil 除算 (ゼロ方向ではなく数学的な床・天井)
+ll floor_div(ll a, ll b) {
+  ll q = a / b, r = a % b;
+  if (r != 0 && ((a < 0) != (b < 0)))
+    q--;
+  return q;
+}
+ll ceil_div(ll a, ll b) {
+  ll q = a / b, r = a % b;
+  if (r != 0 && ((a < 0) == (b < 0)))
+    q++;
+  return q;
+}
+
 // オイラーのトーシェント関数の篩 (1〜nのφを一括計算)
 vector<ll> euler_totient_table(int n) {
   vector<ll> phi(n + 1);
@@ -497,6 +626,24 @@ template <typename T> struct BIT {
 
   // i番目の値をxに更新 (0-indexed)
   void set(int i, T x) { add(i, x - get(i)); }
+
+  // prefix sum >= x となる最小の 0-indexed i。全体和 < x なら n
+  int lower_bound(T x) const {
+    if (x <= 0)
+      return 0;
+    int i = 0;
+    int k = 1;
+    while ((k << 1) <= n)
+      k <<= 1;
+    T s = 0;
+    for (; k > 0; k >>= 1) {
+      if (i + k <= n && s + dat[i + k] < x) {
+        s += dat[i + k];
+        i += k;
+      }
+    }
+    return i;
+  }
 };
 
 // Union-Find木
@@ -504,9 +651,15 @@ struct UnionFind {
   vector<int> d;
   UnionFind(int n = 0) : d(n, -1) {}
   int find(int x) {
-    if (d[x] < 0)
-      return x;
-    return d[x] = find(d[x]);
+    int r = x;
+    while (d[r] >= 0)
+      r = d[r];
+    while (d[x] >= 0) {
+      int p = d[x];
+      d[x] = r;
+      x = p;
+    }
+    return r;
   }
   bool unite(int x, int y) {
     x = find(x);
@@ -567,7 +720,7 @@ template <typename T> struct WeightedUnionFind {
   T diff(int x, int y) { return weight(y) - weight(x); }
 };
 
-// セグメント木
+// セグメント木 (非再帰, ACL と同じ 2n レイアウト)
 template <typename T> struct SegTree {
   using F = function<T(T, T)>;
   int n;
@@ -579,29 +732,44 @@ template <typename T> struct SegTree {
     n = 1;
     while (n < n_)
       n *= 2;
-    dat.assign(2 * n - 1, e);
+    dat.assign(2 * n, e);
+  }
+
+  SegTree(const vector<T> &v, T e_, F f_) : e(e_), f(f_) {
+    int n_ = (int)v.size();
+    n = 1;
+    while (n < n_)
+      n *= 2;
+    dat.assign(2 * n, e);
+    for (int i = 0; i < n_; i++)
+      dat[n + i] = v[i];
+    for (int i = n - 1; i >= 1; i--)
+      dat[i] = f(dat[i << 1], dat[i << 1 | 1]);
   }
 
   void update(int k, T a) {
-    k += n - 1;
+    k += n;
     dat[k] = a;
-    while (k > 0) {
-      k = (k - 1) / 2;
-      dat[k] = f(dat[k * 2 + 1], dat[k * 2 + 2]);
-    }
+    for (k >>= 1; k; k >>= 1)
+      dat[k] = f(dat[k << 1], dat[k << 1 | 1]);
   }
 
-  T query(int a, int b, int k, int l, int r) {
-    if (r <= a || b <= l)
-      return e;
-    if (a <= l && r <= b)
-      return dat[k];
-    T vl = query(a, b, k * 2 + 1, l, (l + r) / 2);
-    T vr = query(a, b, k * 2 + 2, (l + r) / 2, r);
+  T get(int k) const { return dat[k + n]; }
+
+  T query(int a, int b) {
+    T vl = e, vr = e;
+    a += n;
+    b += n;
+    while (a < b) {
+      if (a & 1)
+        vl = f(vl, dat[a++]);
+      if (b & 1)
+        vr = f(dat[--b], vr);
+      a >>= 1;
+      b >>= 1;
+    }
     return f(vl, vr);
   }
-
-  T query(int a, int b) { return query(a, b, 0, 0, n); }
 };
 
 // 遅延伝播セグメント木
@@ -615,7 +783,7 @@ template <typename T, typename U> struct LazySegTree {
   using FTT = function<T(T, T)>;
   using FTU = function<T(T, U)>;
   using FUU = function<U(U, U)>;
-  int n;
+  int n, size, log;
   vector<T> dat;
   vector<U> laz;
   T e;
@@ -625,52 +793,83 @@ template <typename T, typename U> struct LazySegTree {
   FUU h;
 
   LazySegTree(int n_, T e_, U id_, FTT f_, FTU g_, FUU h_)
-      : e(e_), id(id_), f(f_), g(g_), h(h_) {
-    n = 1;
-    while (n < n_)
-      n *= 2;
-    dat.assign(2 * n - 1, e);
-    laz.assign(2 * n - 1, id);
+      : n(n_), e(e_), id(id_), f(f_), g(g_), h(h_) {
+    size = 1;
+    log = 0;
+    while (size < n_) {
+      size <<= 1;
+      log++;
+    }
+    dat.assign(2 * size, e);
+    laz.assign(size, id);
+  }
+
+  void update_node(int k) { dat[k] = f(dat[k << 1], dat[k << 1 | 1]); }
+
+  void all_apply(int k, U x) {
+    dat[k] = g(dat[k], x);
+    if (k < size)
+      laz[k] = h(laz[k], x);
   }
 
   void push(int k) {
     if (laz[k] == id)
       return;
-    dat[k * 2 + 1] = g(dat[k * 2 + 1], laz[k]);
-    dat[k * 2 + 2] = g(dat[k * 2 + 2], laz[k]);
-    laz[k * 2 + 1] = h(laz[k * 2 + 1], laz[k]);
-    laz[k * 2 + 2] = h(laz[k * 2 + 2], laz[k]);
+    all_apply(k << 1, laz[k]);
+    all_apply(k << 1 | 1, laz[k]);
     laz[k] = id;
   }
 
-  void update(int a, int b, U x, int k, int l, int r) {
-    if (r <= a || b <= l)
+  void update(int a, int b, U x) {
+    if (a == b)
       return;
-    if (a <= l && r <= b) {
-      dat[k] = g(dat[k], x);
-      laz[k] = h(laz[k], x);
-      return;
+    a += size;
+    b += size;
+    for (int i = log; i >= 1; i--) {
+      if (((a >> i) << i) != a)
+        push(a >> i);
+      if (((b >> i) << i) != b)
+        push((b - 1) >> i);
     }
-    push(k);
-    update(a, b, x, k * 2 + 1, l, (l + r) / 2);
-    update(a, b, x, k * 2 + 2, (l + r) / 2, r);
-    dat[k] = f(dat[k * 2 + 1], dat[k * 2 + 2]);
+    int l2 = a, r2 = b;
+    while (a < b) {
+      if (a & 1)
+        all_apply(a++, x);
+      if (b & 1)
+        all_apply(--b, x);
+      a >>= 1;
+      b >>= 1;
+    }
+    for (int i = 1; i <= log; i++) {
+      if (((l2 >> i) << i) != l2)
+        update_node(l2 >> i);
+      if (((r2 >> i) << i) != r2)
+        update_node((r2 - 1) >> i);
+    }
   }
 
-  void update(int a, int b, U x) { update(a, b, x, 0, 0, n); }
-
-  T query(int a, int b, int k, int l, int r) {
-    if (r <= a || b <= l)
+  T query(int a, int b) {
+    if (a == b)
       return e;
-    if (a <= l && r <= b)
-      return dat[k];
-    push(k);
-    T vl = query(a, b, k * 2 + 1, l, (l + r) / 2);
-    T vr = query(a, b, k * 2 + 2, (l + r) / 2, r);
+    a += size;
+    b += size;
+    for (int i = log; i >= 1; i--) {
+      if (((a >> i) << i) != a)
+        push(a >> i);
+      if (((b >> i) << i) != b)
+        push((b - 1) >> i);
+    }
+    T vl = e, vr = e;
+    while (a < b) {
+      if (a & 1)
+        vl = f(vl, dat[a++]);
+      if (b & 1)
+        vr = f(dat[--b], vr);
+      a >>= 1;
+      b >>= 1;
+    }
     return f(vl, vr);
   }
-
-  T query(int a, int b) { return query(a, b, 0, 0, n); }
 };
 // Sparse Table (静的RMQ, O(n)構築 O(1)クエリ)
 template <typename T, typename F = function<T(T, T)>> struct SparseTable {
@@ -871,11 +1070,11 @@ struct RollingHash {
   const uint64_t base;
 
   static uint64_t multiply(uint64_t a, uint64_t b) {
-    uint64_t au = a >> 31, ad = a & ((1ull << 31) - 1);
-    uint64_t bu = b >> 31, bd = b & ((1ull << 31) - 1);
-    uint64_t mid = au * bd + ad * bu;
-    uint64_t midu = mid >> 30, midd = mid & ((1ull << 30) - 1);
-    return au * bu * 2 + midu + (midd << 31) + ad * bd;
+    __uint128_t t = (__uint128_t)a * b;
+    t = (t >> 61) + (t & mod);
+    if (t >= mod)
+      t -= mod;
+    return (uint64_t)t;
   }
 
   static uint64_t calc_mod(uint64_t x) {
@@ -917,7 +1116,7 @@ vector<uint64_t> RollingHash::power;
 // @end RollingHash
 
 // @begin string_algo
-// @exports z_algorithm kmp_table kmp_search suffix_array lcp_array
+// @exports z_algorithm kmp_table kmp_search suffix_array lcp_array manacher
 // 文字列アルゴリズム
 namespace string_algo {
 // Z-algorithm: z[i] = s[i..] と s の最長共通接頭辞の長さ
@@ -963,13 +1162,24 @@ vector<int> kmp_table(const string &s) {
 
 // KMP法によるパターン検索: text中のpatternの出現位置を返す
 vector<int> kmp_search(const string &text, const string &pattern) {
-  string s = pattern + "$" + text;
-  auto pi = kmp_table(s);
+  if (pattern.empty()) {
+    vector<int> res((int)text.size() + 1);
+    iota(all(res), 0);
+    return res;
+  }
+  auto pi = kmp_table(pattern);
   vector<int> res;
-  int m = pattern.size();
-  for (int i = 2 * m; i < (int)s.size(); i++) {
-    if (pi[i] == m)
-      res.push_back(i - 2 * m);
+  int j = 0;
+  int m = (int)pattern.size();
+  for (int i = 0; i < (int)text.size(); i++) {
+    while (j > 0 && text[i] != pattern[j])
+      j = pi[j - 1];
+    if (text[i] == pattern[j])
+      j++;
+    if (j == m) {
+      res.push_back(i - m + 1);
+      j = pi[j - 1];
+    }
   }
   return res;
 }
@@ -1020,13 +1230,42 @@ vector<int> lcp_array(const string &s, const vector<int> &sa) {
   }
   return lcp;
 }
+
+// Manacher: 偶数長を '#' で挟んだ文字列上の半径配列 (長さ 2n+1)
+vector<int> manacher(const string &s) {
+  int n = (int)s.size();
+  string t;
+  t.reserve(2 * n + 1);
+  for (int i = 0; i < n; i++) {
+    t.push_back('#');
+    t.push_back(s[i]);
+  }
+  t.push_back('#');
+  int m = (int)t.size();
+  vector<int> r(m);
+  int c = 0, right = 0;
+  for (int i = 0; i < m; i++) {
+    int mirror = 2 * c - i;
+    if (i < right)
+      r[i] = min(right - i, r[mirror]);
+    while (i - r[i] - 1 >= 0 && i + r[i] + 1 < m &&
+           t[i - r[i] - 1] == t[i + r[i] + 1])
+      r[i]++;
+    if (i + r[i] > right) {
+      c = i;
+      right = i + r[i];
+    }
+  }
+  return r;
+}
 } // namespace string_algo
 // @end string_algo
 
 // @begin graph
 // @dep structure
-// @exports dijkstra bfs warshall_floyd topological_sort kruskal LCA
-// bellman_ford scc MaxFlow EulerTour グラフ関連
+// @exports dijkstra bfs bfs01 warshall_floyd topological_sort kruskal LCA
+// bellman_ford scc MaxFlow EulerTour tree_diameter TwoSat MinCostFlow
+// グラフ関連
 namespace graph {
 // ダイクストラ法
 vector<ll> dijkstra(const vector<vector<pair<int, ll>>> &g, int s) {
@@ -1065,6 +1304,29 @@ vector<int> bfs(const vector<vector<int>> &g, int s) {
         continue;
       dist[u] = dist[v] + 1;
       que.push(u);
+    }
+  }
+  return dist;
+}
+
+// 0-1 BFS (辺重みが 0 または 1)
+vector<ll> bfs01(const vector<vector<pair<int, int>>> &g, int s) {
+  int n = g.size();
+  vector<ll> dist(n, LINF);
+  deque<int> que;
+  dist[s] = 0;
+  que.push_back(s);
+  while (!que.empty()) {
+    int v = que.front();
+    que.pop_front();
+    for (auto [u, w] : g[v]) {
+      if (dist[u] > dist[v] + w) {
+        dist[u] = dist[v] + w;
+        if (w == 0)
+          que.push_front(u);
+        else
+          que.push_back(u);
+      }
     }
   }
   return dist;
@@ -1211,7 +1473,7 @@ vector<ll> bellman_ford(int n, const vector<tuple<int, int, ll>> &edges,
   return dist;
 }
 
-// 強連結成分分解 (SCC) - Kosaraju's algorithm
+// 強連結成分分解 (SCC) - 非再帰 Kosaraju
 // 返り値: comp[v] = 頂点vが属するSCC番号 (トポロジカル順)
 vector<int> scc(const vector<vector<int>> &g) {
   int n = g.size();
@@ -1221,32 +1483,46 @@ vector<int> scc(const vector<vector<int>> &g) {
       rg[u].push_back(v);
 
   vector<int> order, comp(n, -1);
-  vector<bool> visited(n, false);
+  vector<char> vis(n, 0);
+  for (int i = 0; i < n; i++) {
+    if (vis[i])
+      continue;
+    vector<pair<int, int>> st;
+    st.emplace_back(i, 0);
+    vis[i] = 1;
+    while (!st.empty()) {
+      auto &[v, it] = st.back();
+      if (it < (int)g[v].size()) {
+        int u = g[v][it++];
+        if (!vis[u]) {
+          vis[u] = 1;
+          st.emplace_back(u, 0);
+        }
+      } else {
+        order.push_back(v);
+        st.pop_back();
+      }
+    }
+  }
 
-  // 1回目のDFS: 帰りがけ順を記録
-  auto dfs1 = [&](auto &self, int v) -> void {
-    visited[v] = true;
-    for (int u : g[v])
-      if (!visited[u])
-        self(self, u);
-    order.push_back(v);
-  };
-  for (int i = 0; i < n; i++)
-    if (!visited[i])
-      dfs1(dfs1, i);
-
-  // 2回目のDFS: 逆グラフ上で帰りがけ順の逆順に探索
   int cnt = 0;
-  auto dfs2 = [&](auto &self, int v, int c) -> void {
-    comp[v] = c;
-    for (int u : rg[v])
-      if (comp[u] == -1)
-        self(self, u, c);
-  };
-  for (int i = n - 1; i >= 0; i--)
-    if (comp[order[i]] == -1)
-      dfs2(dfs2, order[i], cnt++);
-
+  for (int i = n - 1; i >= 0; i--) {
+    int s = order[i];
+    if (comp[s] != -1)
+      continue;
+    vector<int> st = {s};
+    comp[s] = cnt;
+    while (!st.empty()) {
+      int v = st.back();
+      st.pop_back();
+      for (int u : rg[v])
+        if (comp[u] == -1) {
+          comp[u] = cnt;
+          st.push_back(u);
+        }
+    }
+    cnt++;
+  }
   return comp;
 }
 
@@ -1315,22 +1591,32 @@ struct MaxFlow {
   }
 };
 
-// オイラーツアー (部分木クエリ用)
+// オイラーツアー (部分木クエリ用, 非再帰)
 struct EulerTour {
   vector<int> in, out;
   int timer;
 
   EulerTour(const vector<vector<int>> &g, int root = 0)
       : in(g.size()), out(g.size()), timer(0) {
-    dfs(g, root, -1);
-  }
-
-  void dfs(const vector<vector<int>> &g, int v, int p) {
-    in[v] = timer++;
-    for (int u : g[v])
-      if (u != p)
-        dfs(g, u, v);
-    out[v] = timer;
+    int n = (int)g.size();
+    vector<int> it(n, 0), par(n, -1);
+    vector<int> st;
+    st.push_back(root);
+    in[root] = timer++;
+    while (!st.empty()) {
+      int v = st.back();
+      if (it[v] < (int)g[v].size()) {
+        int u = g[v][it[v]++];
+        if (u == par[v])
+          continue;
+        par[u] = v;
+        in[u] = timer++;
+        st.push_back(u);
+      } else {
+        out[v] = timer;
+        st.pop_back();
+      }
+    }
   }
 
   // 頂点vの部分木は [in[v], out[v]) に対応
@@ -1338,8 +1624,141 @@ struct EulerTour {
     return in[u] <= in[v] && out[v] <= out[u];
   }
 };
+
+// 木の直径: {長さ, {端点 u, v}}
+pair<int, pii> tree_diameter(const vector<vector<int>> &g) {
+  auto farthest = [&](int s) {
+    auto d = bfs(g, s);
+    int u = s;
+    for (int i = 0; i < (int)d.size(); i++)
+      if (d[i] >= 0 && d[i] > d[u])
+        u = i;
+    return pair<int, int>{u, d[u]};
+  };
+  int u = farthest(0).first;
+  auto [v, diam] = farthest(u);
+  return {diam, {u, v}};
+}
+
+// 2-SAT (x_i = f) ∨ (x_j = g)
+struct TwoSat {
+  int n;
+  vector<vector<int>> g;
+  vector<bool> ans;
+  TwoSat(int n_ = 0) : n(n_), g(2 * n_), ans(n_) {}
+  void add_clause(int i, bool f, int j, bool gj) {
+    g[2 * i + !f].push_back(2 * j + gj);
+    g[2 * j + !gj].push_back(2 * i + f);
+  }
+  bool satisfiable() {
+    auto id = scc(g);
+    for (int i = 0; i < n; i++) {
+      if (id[2 * i] == id[2 * i + 1])
+        return false;
+      ans[i] = id[2 * i] < id[2 * i + 1];
+    }
+    return true;
+  }
+};
+
+// 最小費用流 (ポテンシャル付き Dijkstra)
+struct MinCostFlow {
+  struct Edge {
+    int to, rev;
+    ll cap, cost;
+  };
+  int n;
+  vector<vector<Edge>> g;
+  MinCostFlow(int n_) : n(n_), g(n_) {}
+  void add_edge(int from, int to, ll cap, ll cost) {
+    g[from].push_back({to, (int)g[to].size(), cap, cost});
+    g[to].push_back({from, (int)g[from].size() - 1, 0, -cost});
+  }
+  pair<ll, ll> min_cost_flow(int s, int t, ll maxf) {
+    ll flow = 0, cost = 0;
+    vector<ll> h(n, 0), dist(n);
+    vector<int> prevv(n), preve(n);
+    while (flow < maxf) {
+      fill(all(dist), LINF);
+      dist[s] = 0;
+      priority_queue<pair<ll, int>, vector<pair<ll, int>>, greater<>> que;
+      que.push({0, s});
+      while (!que.empty()) {
+        auto [d, v] = que.top();
+        que.pop();
+        if (dist[v] < d)
+          continue;
+        for (int i = 0; i < (int)g[v].size(); i++) {
+          Edge &e = g[v][i];
+          if (e.cap > 0 && dist[e.to] > dist[v] + e.cost + h[v] - h[e.to]) {
+            dist[e.to] = dist[v] + e.cost + h[v] - h[e.to];
+            prevv[e.to] = v;
+            preve[e.to] = i;
+            que.push({dist[e.to], e.to});
+          }
+        }
+      }
+      if (dist[t] == LINF)
+        break;
+      for (int v = 0; v < n; v++)
+        if (dist[v] < LINF)
+          h[v] += dist[v];
+      ll d = maxf - flow;
+      for (int v = t; v != s; v = prevv[v])
+        chmin(d, g[prevv[v]][preve[v]].cap);
+      flow += d;
+      cost += d * h[t];
+      for (int v = t; v != s; v = prevv[v]) {
+        Edge &e = g[prevv[v]][preve[v]];
+        e.cap -= d;
+        g[v][e.rev].cap += d;
+      }
+    }
+    return {flow, cost};
+  }
+};
 } // namespace graph
 // @end graph
+
+// @begin util
+// @exports argsort rle rotate90
+template <typename T> vector<int> argsort(const vector<T> &v) {
+  vector<int> idx(sz(v));
+  iota(all(idx), 0);
+  sort(all(idx),
+       [&](int i, int j) { return v[i] < v[j] || (v[i] == v[j] && i < j); });
+  return idx;
+}
+
+template <typename T> vector<pair<T, int>> rle(const vector<T> &v) {
+  vector<pair<T, int>> res;
+  for (const auto &x : v) {
+    if (res.empty() || res.back().first != x)
+      res.emplace_back(x, 1);
+    else
+      res.back().second++;
+  }
+  return res;
+}
+
+inline vector<pair<char, int>> rle(const string &s) {
+  vector<pair<char, int>> res;
+  for (char c : s) {
+    if (res.empty() || res.back().first != c)
+      res.emplace_back(c, 1);
+    else
+      res.back().second++;
+  }
+  return res;
+}
+
+template <typename T> vector<vector<T>> rotate90(const vector<vector<T>> &a) {
+  int h = sz(a), w = sz(a[0]);
+  vector<vector<T>> b(w, vector<T>(h));
+  rep(i, h) rep(j, w) b[j][h - 1 - i] = a[i][j];
+  return b;
+}
+// @end util
 
 // メイン関数
 #ifndef TESTING

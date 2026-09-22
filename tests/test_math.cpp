@@ -109,4 +109,47 @@ TEST(euler_totient_table) {
   ASSERT_EQ(phi[7], 6LL);
 }
 
+TEST(ceil_floor_div) {
+  ASSERT_EQ(math::ceil_div(10, 3), 4LL);
+  ASSERT_EQ(math::ceil_div(-10, 3), -3LL);
+  ASSERT_EQ(math::ceil_div(10, -3), -3LL);
+  ASSERT_EQ(math::ceil_div(-10, -3), 4LL);
+  ASSERT_EQ(math::ceil_div(9, 3), 3LL);
+  ASSERT_EQ(math::floor_div(10, 3), 3LL);
+  ASSERT_EQ(math::floor_div(-10, 3), -4LL);
+  ASSERT_EQ(math::floor_div(10, -3), -4LL);
+  ASSERT_EQ(math::floor_div(-10, -3), 3LL);
+}
+
+TEST(is_prime_64bit) {
+  ASSERT_TRUE(math::is_prime(998244353));
+  ASSERT_FALSE(math::is_prime(91)); // 7*13
+  ASSERT_FALSE(math::is_prime(3215031751LL));
+  ASSERT_TRUE(math::is_prime((1LL << 61) - 1));
+}
+
+TEST(factorize_large) {
+  auto f = math::factorize(1000000007LL * 3);
+  ASSERT_EQ((int)f.size(), 2);
+  ASSERT_EQ(f[0].first, 3LL);
+  ASSERT_EQ(f[0].second, 1);
+  ASSERT_EQ(f[1].first, 1000000007LL);
+  ASSERT_EQ(f[1].second, 1);
+
+  auto p = math::factorize(1000000007LL);
+  ASSERT_EQ((int)p.size(), 1);
+  ASSERT_EQ(p[0].first, 1000000007LL);
+  ASSERT_EQ(p[0].second, 1);
+}
+
+TEST(sieve_spf) {
+  auto spf = math::sieve_spf(20);
+  ASSERT_EQ(spf[2], 2);
+  ASSERT_EQ(spf[3], 3);
+  ASSERT_EQ(spf[4], 2);
+  ASSERT_EQ(spf[9], 3);
+  ASSERT_EQ(spf[15], 3);
+  ASSERT_EQ(spf[19], 19);
+}
+
 int main() { RUN_ALL_TESTS(); }
