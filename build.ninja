@@ -1,10 +1,6 @@
 cxx = g++
 cxxflags = -Wall -O2 -g -std=c++23
 
-rule assemble
-  command = python3 tools/assemble.py
-  description = Assembling main.cpp from src/
-
 rule compile
   command = $cxx $cxxflags -o $out $in
   description = Compiling $out
@@ -12,31 +8,6 @@ rule compile
 rule compile_test
   command = $cxx $cxxflags -DTESTING -o $out $in
   description = Compiling test $out
-
-build main.cpp: assemble | tools/assemble.py $
-  src/00_headers.hpp $
-  src/01_types.hpp $
-  src/02_constants.hpp $
-  src/03_directions.hpp $
-  src/04_macros.hpp $
-  src/05_debug.hpp $
-  src/06_chminmax.hpp $
-  src/07_fastio.hpp $
-  src/08_input.hpp $
-  src/09_output.hpp $
-  src/10_vv.hpp $
-  src/11_modint.hpp $
-  src/12_math.hpp $
-  src/13_structure.hpp $
-  src/14_binary_search.hpp $
-  src/15_compress.hpp $
-  src/16_cumulative_sum.hpp $
-  src/17_matrix.hpp $
-  src/18_rolling_hash.hpp $
-  src/19_string_algo.hpp $
-  src/20_graph.hpp $
-  src/21_util.hpp $
-  src/99_main.hpp
 
 build main.out: compile main.cpp
 
