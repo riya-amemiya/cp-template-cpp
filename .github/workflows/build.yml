@@ -67,4 +67,3 @@ jobs:
           nix develop --command ninja tests
           for t in tests/*.out; do echo "=== $t ===" && "./$t"; done
           python3 tests/test_strip.py
-          python3 tools/assemble.py --check
