@@ -2,7 +2,7 @@
 
 C++23 競技プログラミングテンプレート (AtCoder 等向け)
 
-提出時は未使用宣言を削る:
+提出時は次のコマンドで未使用宣言を削る。
 
 ```bash
 python3 tools/strip.py > submission.cpp
@@ -26,6 +26,7 @@ python3 tools/strip.py solution.cpp -o submission.cpp
 - [binary\_search 名前空間](#binary_search-名前空間)
 - [座標圧縮 Compress](#座標圧縮-compress)
 - [累積和](#累積和)
+- [行列 Matrix](#行列-matrix)
 - [ローリングハッシュ RollingHash](#ローリングハッシュ-rollinghash)
 - [文字列アルゴリズム](#文字列アルゴリズム)
 - [graph 名前空間](#graph-名前空間)
@@ -65,6 +66,10 @@ python3 tools/strip.py -o submission.cpp
 | `vb` | `vector<bool>` |
 | `vvb` | `vector<vector<bool>>` |
 | `vs` | `vector<string>` |
+| `vpii` | `vector<pii>` |
+| `vpll` | `vector<pll>` |
+| `vld` | `vector<ld>` |
+| `vull` | `vector<ull>` |
 
 ---
 
@@ -72,19 +77,19 @@ python3 tools/strip.py -o submission.cpp
 
 | 定数 | 値 | 用途 |
 | --- | --- | --- |
-| `INF` | `1e9` | int の無限大・未到達の初期値 |
-| `LINF` | `1e18` | ll の無限大・未到達の初期値 |
+| `INF` | `1e9` | int の無限大として未到達の初期値に使う |
+| `LINF` | `1e18` | ll の無限大として未到達の初期値に使う |
 | `MOD` | `1e9 + 7` | 答えを mod で求める問題の定番素数 |
 | `MOD998` | `998244353` | NTT フレンドリーな素数。問題文に指定がある場合に使う |
-| `PI` | `M_PI` | 幾何・三角関数を使う問題 |
+| `PI` | `M_PI` | 幾何や三角関数を使う問題 |
 | `EPS` | `1e-9` | 実数比較の誤差吸収 (`abs(a-b) < EPS` で等値判定) |
 
 ### グリッド方向配列
 
 | 配列 | 内容 | 使う場面 |
 | --- | --- | --- |
-| `dx4`, `dy4` | 上下左右 4 方向 | 迷路・BFS・島の数え上げなど移動が 4 方向の問題 |
-| `dx8`, `dy8` | 斜め込み 8 方向 | チェスのキング移動・斜め移動が許可される問題 |
+| `dx4`, `dy4` | 上下左右 4 方向 | 迷路、BFS、島の数え上げなど、移動が 4 方向の問題 |
+| `dx8`, `dy8` | 斜め込み 8 方向 | チェスのキングの移動や、斜め移動が許可される問題 |
 
 ---
 
@@ -96,7 +101,9 @@ python3 tools/strip.py -o submission.cpp
 | --- | --- | --- |
 | `rep(i, n)` | `for (int i = 0; i < n; ++i)` | 0-indexed の基本ループ |
 | `rep1(i, n)` | `for (int i = 1; i <= n; ++i)` | 1-indexed でループしたい時 |
+| `rep2(i, a, b)` | `for (int i = a; i < b; ++i)` | 区間 [a, b) をループしたい時 |
 | `rrep(i, n)` | `for (int i = n-1; i >= 0; --i)` | 後ろから走査、DP の逆順更新 |
+| `rrep1(i, n)` | `for (int i = n; i >= 1; --i)` | 1-indexed で後ろから走査したい時 |
 | `fore(i, a)` | `for (auto& i : a)` | コンテナの全要素を参照で走査 |
 
 ### コンテナ操作
@@ -105,21 +112,25 @@ python3 tools/strip.py -o submission.cpp
 | --- | --- |
 | `all(v)` | `v.begin(), v.end()` |
 | `rall(v)` | `v.rbegin(), v.rend()` |
+| `sz(x)` | `((int)(x).size())` |
 | `pb` | `push_back` |
 | `eb` | `emplace_back` |
 | `mp` | `make_pair` |
 | `fi` | `first` |
 | `se` | `second` |
+| `Sort(v)` | `sort(all(v))` |
+| `Reverse(v)` | `reverse(all(v))` |
+| `Unique(v)` | `v.erase(unique(all(v)), v.end())` |
 
 ### デバッグ
 
 コンパイル時に `-DLOCAL` を付けると有効になり、本番提出時は自動で無効化される。
-`pair`, `vector`, `set`, `map` をそのまま `cerr` に流せる。
+`pair`, `vector`, `set`, `map`, `multiset`, `deque` をそのまま `cerr` に流せる。
 
 ```cpp
-debug(x, y, z);          // [x, y, z]: 1 2 3
+debug(x, y, z);          // [x, y, z]: 1, 2, 3
 debug(v);                 // [v]: [1, 2, 3]
-debug(mp(1, "abc"));     // [(1, "abc")]
+debug(mp(1, "abc"));     // [mp(1, "abc")]: (1, abc)
 ```
 
 ---
@@ -140,6 +151,7 @@ chmax(ans, val);
 ### fastio
 
 入力が大量にある問題では必ず冒頭で呼ぶ。`cin` を 1MiB バッファのカスタム streambuf に付け替える。`endl` をマクロで `'\n'` に置き換えているので合わせて使う。
+`cout` には `fixed` と `setprecision(20)` も設定するので、浮動小数点数は小数点以下 20 桁で出力される。
 
 ```cpp
 fastio();
@@ -155,12 +167,28 @@ auto v = input_vec<ll>(n);          // n 要素の 1 次元配列
 auto g = input_vec2<ll>(n, m);      // n×m の 2 次元配列
 ```
 
+次のマクロは変数を宣言してそのまま `cin` で読み込む。
+
+| マクロ | 宣言 |
+| --- | --- |
+| `INT(a, b)` | `int a, b;` |
+| `LL(a, b)` | `ll a, b;` |
+| `STR(s)` | `string s;` |
+| `CHR(c)` | `char c;` |
+| `DBL(x)` | `double x;` |
+| `VEC(type, name, n)` | `vector<type> name(n);` |
+| `VEC2(type, name, h, w)` | `vector<vector<type>> name(h, vector<type>(w));` |
+
 ### 出力ヘルパー
 
 ```cpp
 print_vec(v);           // スペース区切りで出力 + 改行
 print_vec(v, "\n");     // 1 行 1 要素で出力したい時
 ```
+
+`Yes(cond)` は `cond` が true なら `Yes`、false なら `No` を改行付きで出力する。
+`No()` は `No` を出力する。
+`YES(cond)` と `NO()` は同じ動作で、`YES` と `NO` を出力する。
 
 ### 2 次元ベクトル初期化
 
@@ -174,7 +202,7 @@ auto g  = vv<int>(n, n, INF);   // グラフの距離行列を INF で初期化
 ```cpp
 auto idx = argsort(a);          // a[idx[0]] <= a[idx[1]] <= ... (安定)
 auto enc = rle(a);              // {(値, 長さ), ...}
-auto encs = rle(s);             // 文字列版
+auto encs = rle(s);             // 文字列にも使える
 auto b = rotate90(grid);        // 時計回り 90°
 ```
 
@@ -199,7 +227,7 @@ cout << c << "\n";
 cin >> a;                      // そのまま入力も受け取れる
 ```
 
-> **使う場面**: 経路数・場合の数の DP、組み合わせ数の計算、行列累乗
+> **使う場面**: 経路数や場合の数の DP、組み合わせ数の計算、行列累乗
 
 ---
 
@@ -207,7 +235,9 @@ cin >> a;                      // そのまま入力も受け取れる
 
 ### pow_mod
 
-`modint` が使えない場面（MOD が固定でない・ll のまま扱いたい）で使う。
+MOD が固定でない場合や ll のまま扱いたい場合など、`modint` が使えない場面で使う。
+途中の乗算は `__int128` で行う。
+`math::mul_mod(a, b, m)` は同じ方法で `a * b mod m` を返す。
 
 ```cpp
 ll r = math::pow_mod(a, n, m);  // a^n mod m、O(log n)
@@ -218,9 +248,10 @@ ll r = math::pow_mod(a, n, m);  // a^n mod m、O(log n)
 ### is_prime
 
 1 つの数が素数か判定するだけでよい場合に使う。大量に判定するなら `sieve` の方が速い。
+判定は 64bit 決定的 Miller-Rabin で、本体は `math::miller_rabin(n)` にある。
 
 ```cpp
-bool ok = math::is_prime(n);  // O(√n)
+bool ok = math::is_prime(n);  // O(log n)
 ```
 
 > **使う場面**: 素数に関する条件分岐、素数のみカウントする問題
@@ -235,7 +266,7 @@ auto ps   = math::prime_list(n);  // n 以下の素数一覧
 ```
 
 > **使う場面**: 複数の数について素数判定が必要な場合、素数の個数を数える問題
-> **計算量**: O(n log log n)
+> **計算量**: O(n) (どちらも `sieve_spf` の線形篩を使う)
 
 ### factorize
 
@@ -244,8 +275,10 @@ auto f = math::factorize(12);
 // f = {(2, 2), (3, 1)}  → 12 = 2^2 × 3^1
 ```
 
-> **使う場面**: 素因数の個数・種類を使う問題、約数の個数を求める問題（指数に +1 して掛け合わせる）
-> **計算量**: O(√n)
+> **使う場面**: 素因数の個数や種類を使う問題、約数の個数を求める問題（指数に +1 して掛け合わせる）
+> **計算量**: 1e6 までの因数は試し割りで取り、残りは Pollard's Rho で分解する（n ≤ 1e18）
+
+`math::pollard(n)` は、合成数 n の 1 と n 以外の約数を 1 つ返す補助関数。
 
 ### divisors
 
@@ -277,12 +310,40 @@ ll c = C(n, k);               // nCk mod MOD、O(1)
 ll p = C.perm(n, k);          // nPk mod MOD、O(1)
 ```
 
-> **使う場面**: 場合の数の DP、確率・期待値問題、二項係数を何度も使う問題
+> **使う場面**: 場合の数の DP、確率や期待値の問題、二項係数を何度も使う問題
 > **注意**: `MOD` がデフォルト。問題によって `combination C(n, MOD998)` と指定可能
+
+### crt
+
+`x ≡ r1 (mod m1)` と `x ≡ r2 (mod m2)` を同時に満たす x を求める。
+返り値は `{r, m}` で、`x ≡ r (mod m)` を表す。m は `lcm(m1, m2)` で、解がなければ `{0, -1}` を返す。
+
+```cpp
+auto [r, m] = math::crt(r1, m1, r2, m2);
+```
+
+### floor_sum
+
+`sum_{i=0}^{n-1} floor((a*i + b) / m)` を求める。
+`n >= 0` と `m >= 1` は assert で確かめる。負の `a` と `b` は正規化しないので、0 以上の値を渡す。
+
+```cpp
+ll s = math::floor_sum(n, m, a, b);
+```
+
+### euler_totient / euler_totient_table
+
+`euler_totient(n)` はオイラーのトーシェント関数 φ(n) を O(√n) で返す。
+`euler_totient_table(n)` は 0 から n までの φ を篩でまとめて求め、O(n log log n) で返す。
+
+```cpp
+ll phi = math::euler_totient(n);
+auto table = math::euler_totient_table(n);
+```
 
 ### ceil_div / floor_div
 
-負数でも数学的な天井・床になる除算。`a / b` のゼロ方向切り捨てとは違う。
+負数でも数学的な天井と床になる除算。`a / b` のゼロ方向切り捨てとは違う。
 
 ```cpp
 ll x = math::ceil_div(10, 3);   // 4
@@ -297,8 +358,6 @@ ll y = math::floor_div(-10, 3); // -4
 auto spf = math::sieve_spf(n);
 int p = spf[x];  // x の最小素因数
 ```
-
-`is_prime` は 64bit 決定的 Miller-Rabin。`factorize` は小さい因数を試し割りし、残りを Pollard's Rho で分解する（n ≤ 1e18）。
 
 ---
 
@@ -355,12 +414,14 @@ structure::WeightedUnionFind<ll> wuf(n);
 wuf.unite(x, y, cost);  // weight(y) - weight(x) = cost となるよう統合
 wuf.diff(x, y);         // weight(y) - weight(x) を返す（同一成分のみ有効）
 wuf.same(x, y);         // 同じ連結成分か
+wuf.weight(x);          // 根を基準にした x の重み
+wuf.size(x);            // x が属する連結成分のサイズ
 ```
 
 > **使う場面**:
 >
 > - 相対的な差が与えられる問題（「A は B より 3 大きい」等）
-> - 差分制約問題の簡易版
+> - 差分制約問題のうち単純なもの
 > - 同グループ内での値の大小・差を管理する必要がある問題
 
 ### SegTree (セグメント木)
@@ -384,7 +445,7 @@ seg.get(i);          // i 番目の値
 > **使う場面**:
 >
 > - 点更新 + 区間クエリが必要な問題
-> - BIT で扱えない演算（最大・最小・GCD など）
+> - BIT で扱えない演算（最大、最小、GCD など）
 > - 「左から i 番目の要素を更新しながら区間の最大値を求める」
 >
 > **計算量**: 更新 O(log n)、クエリ O(log n)
@@ -414,6 +475,19 @@ seg.query(l, r);      // [l, r) の最小値
 >
 > **計算量**: 更新 O(log n)、クエリ O(log n)
 
+### SparseTable
+
+更新のない配列について、区間 [l, r) の演算結果を O(1) で求める。
+区間を重ねて計算するので、min、max、gcd のように同じ要素を 2 回使っても結果が変わらない演算に限る。
+`l < r` の区間を渡す。
+
+```cpp
+structure::SparseTable<ll> st(v, [](ll a, ll b){ return min(a, b); });
+st.query(l, r);
+```
+
+> **計算量**: 構築 O(n log n)、クエリ O(1)
+
 ---
 
 ## binary_search 名前空間
@@ -422,18 +496,19 @@ seg.query(l, r);      // [l, r) の最小値
 条件が単調（ある値以下は全部 OK、以上は全部 NG など）であれば適用可能。
 
 ```cpp
-// 「f(x) == true となる最大の整数 x」を求める
+// 「f(x) == true となる最大の整数 x」を求める (ok > ng なら最小の x)
 // ok: true になることが分かっている値、ng: false になることが分かっている値
 ll ans = binary_search::binary_search_left(ok, ng, [&](ll mid){
     return check(mid);  // mid が条件を満たすなら true
 });
 
-// 「f(x) == true となる最小の整数 x」を求める
+// 「f(x) == false となる最小の整数 x」を求める (ng > ok なら最大の x)
+// ng: true になることが分かっている値、ok: false になることが分かっている値
 ll ans = binary_search::binary_search_right(ng, ok, [&](ll mid){
     return check(mid);
 });
 
-// 実数二分探索（デフォルト 100 回反復）
+// 実数二分探索（デフォルト 100 回反復）。f(left) == false、f(right) == true として true 側の境界を返す
 double ans = binary_search::binary_search_real(0.0, 1e9, [&](double mid){
     return check(mid);
 });
@@ -457,18 +532,20 @@ BIT や SegTree のインデックスとして使うのが典型。
 Compress<ll> comp;
 comp.add(v);      // vector の全要素を登録
 comp.add(x);      // 1 要素を追加
-comp.build();     // ソート・重複除去（add 後に必ず呼ぶ）
+comp.build();     // ソートと重複除去（add 後に必ず呼ぶ）
 
 int idx = comp.get(x);   // x の圧縮後インデックス (0-indexed)
 int sz  = comp.size();   // 圧縮後の種類数
 ll val  = comp[i];       // 元の i 番目の値（逆引き）
 ```
 
+`Compress<ll> comp(v);` と書くと、構築時に `v` の全要素を登録する。この場合も `build()` は呼ぶ。
+
 > **使う場面**:
 >
 > - 座標値が最大 `1e18` だが種類数が `N` 以下の場合
 > - 「値の大小関係は必要だが具体的な値は不要」という問題
-> - BIT + 座標圧縮で転倒数・区間カウント
+> - BIT と座標圧縮を組み合わせた転倒数や区間カウント
 
 ---
 
@@ -488,7 +565,7 @@ ll s = cs.sum(l, r);         // a[l] + a[l+1] + ... + a[r-1]
 > **使う場面**:
 >
 > - 「区間 [l, r) の和を複数回求める」
-> - しゃくとり法・二分探索と組み合わせて条件を満たす区間を探す
+> - しゃくとり法や二分探索と組み合わせて条件を満たす区間を探す
 > - 差分配列の代わりに使う
 
 ### CumulativeSum2D (2 次元)
@@ -509,9 +586,30 @@ ll s = cs2.sum(i1, j1, i2, j2);  // 行 [i1,i2)、列 [j1,j2) の矩形和
 
 ---
 
+## 行列 Matrix
+
+行列の積と累乗を計算する。`T` に `mint` を使うと、mod を取りながら計算できる。
+
+```cpp
+Matrix<mint> A(n, n);
+A[i][j] = x;
+auto B = A.pow(k);
+auto C = A * B;
+auto I = Matrix<mint>::E(n);
+```
+
+`A * B` は行列積、`A.pow(k)` は k 乗、`Matrix<T>::E(n)` は n 次の単位行列を返す。
+`Matrix<T>(vector<vector<T>>)` で 2 次元配列からも作れる。
+積は左の列数と右の行数が一致しないと、`pow` は正方行列でないと assert で止まる。
+
+> **計算量**: n 次正方行列の積 O(n^3)、k 乗 O(n^3 log k)
+
+---
+
 ## ローリングハッシュ RollingHash
 
 Mersenne 素数 `2^61 - 1` を法とする衝突率の低いハッシュ。
+base はデフォルトで 10007 で、`RollingHash rh(s, base)` のように第 2 引数で変えられる。
 
 ```cpp
 RollingHash rh(s);
@@ -525,10 +623,12 @@ uint64_t combined = RollingHash::connect(h1, h2, len2);
 >
 > - 「文字列 S に文字列 T が含まれるか」（KMP の代替）
 > - 「2 つの部分文字列が等しいか」を O(1) で判定
-> - 回文判定（正順・逆順のハッシュを比較）
+> - 回文判定（正順と逆順のハッシュを比較）
 > - 「同じ部分文字列が何種類あるか」（二分探索と組み合わせ）
 >
-> **注意**: 多倍長ハッシュを使いたい場合は base を 2 つ用意して両方一致を確認する
+> **注意**: 累乗のテーブル `power` は全インスタンスで共有する static メンバで、構築のたびに、その文字列の長さと base で作り直される。base が違うインスタンスを同時に使うと、先に構築したほうの `get` と `connect` は正しい値を返さない。同じ base でも、後から短い文字列で構築すると、先に構築したほうで長い区間を `get` したときにテーブルの範囲外を読む。
+
+---
 
 ## 文字列アルゴリズム
 
@@ -572,7 +672,7 @@ auto dist = graph::dijkstra(g, s);  // dist[v] = s→v の最短距離（未到�
 ```cpp
 // g[v] = {隣接頂点, ...}
 auto dist = graph::bfs(g, s);  // dist[v] = s→v の最短距離（辺数）、未到達は -1
-auto dist01 = graph::bfs01(g01, s);  // 辺重み 0/1。g01[v] = {(u, w), ...}
+auto dist01 = graph::bfs01(g01, s);  // 辺重み 0/1。g01[v] = {(u, w), ...}、未到達は LINF
 ```
 
 > **使う場面**:
@@ -668,10 +768,57 @@ int dep = lca.depth[v];      // v の深さ（根からの距離）
 >
 > **前計算**: O(n log n)、**クエリ**: O(log n)
 
-### tree_diameter
+### bellman_ford
+
+負の辺を含むグラフの単一始点最短経路。
+未到達の頂点は LINF、負閉路を経由して到達できる頂点は -LINF になる。
 
 ```cpp
-auto [diam, uv] = graph::tree_diameter(g);  // 長さと端点
+vector<tuple<int, int, ll>> edges;
+edges.eb(u, v, cost);
+auto dist = graph::bellman_ford(n, edges, s);
+```
+
+> **計算量**: O(VE)
+
+### scc
+
+強連結成分分解。`comp[v]` は頂点 v が属する成分の番号で、番号は成分を縮約したグラフのトポロジカル順に振られる。
+
+```cpp
+auto comp = graph::scc(g);
+```
+
+> **計算量**: O(V + E)
+
+### MaxFlow
+
+Dinic 法で最大流を求める。
+
+```cpp
+graph::MaxFlow mf(n);
+mf.add_edge(u, v, cap);
+ll flow = mf.max_flow(s, t);
+```
+
+### EulerTour
+
+根付き木の頂点に、DFS の行きがけ順で番号を振る。
+頂点 v の部分木は区間 `[in[v], out[v])` に対応するので、BIT や SegTree と組み合わせて部分木クエリを処理できる。
+`is_ancestor(u, v)` は、u が v の祖先なら true を返す。u と v が同じ頂点のときも true になる。
+
+```cpp
+graph::EulerTour et(g, 0);
+int l = et.in[v], r = et.out[v];
+bool anc = et.is_ancestor(u, v);
+```
+
+### tree_diameter
+
+木の直径を辺数で求め、長さと両端の頂点を返す。
+
+```cpp
+auto [diam, uv] = graph::tree_diameter(g);  // 長さと両端の頂点
 ```
 
 ### TwoSat
@@ -685,6 +832,9 @@ if (ts.satisfiable()) {
 ```
 
 ### MinCostFlow
+
+s から t へ最大 maxf だけ流し、`{流量, 費用}` を返す。
+ポテンシャルを 0 から始めるので、辺のコストは 0 以上にする。
 
 ```cpp
 graph::MinCostFlow mcf(n);
@@ -703,26 +853,44 @@ graph TD
     WUF["structure::WeightedUnionFind"]
     SEG["structure::SegTree"]
     LAZY["structure::LazySegTree"]
+    SPARSE["structure::SparseTable"]
+    POWMOD["math::pow_mod"]
     COMB["math::combination"]
+    ISPRIME["math::is_prime"]
+    FACT["math::factorize"]
+    SPF["math::sieve_spf"]
+    SIEVE["math::sieve"]
+    PLIST["math::prime_list"]
+    EXTGCD["math::extgcd"]
+    CRT["math::crt"]
     KRUSKAL["graph::kruskal"]
     LCA["graph::LCA"]
     MODINT["modint / mint / mint998"]
     COMPRESS["Compress"]
     CS["CumulativeSum"]
     CS2["CumulativeSum2D"]
+    MATRIX["Matrix"]
     RH["RollingHash"]
     DIJKSTRA["graph::dijkstra"]
     BFS["graph::bfs"]
     BFS01["graph::bfs01"]
     WF["graph::warshall_floyd"]
     TOPO["graph::topological_sort"]
+    BF["graph::bellman_ford"]
+    SCC["graph::scc"]
+    MAXFLOW["graph::MaxFlow"]
+    EULER["graph::EulerTour"]
     TWOSAT["graph::TwoSat"]
     MCF["graph::MinCostFlow"]
     DIAM["graph::tree_diameter"]
 
     KRUSKAL --> UF
-    COMB --> MODINT
-    LCA --> BFS
-    TWOSAT --> SCC["graph::scc"]
+    COMB --> POWMOD
+    ISPRIME --> POWMOD
+    FACT --> ISPRIME
+    SIEVE --> SPF
+    PLIST --> SPF
+    CRT --> EXTGCD
+    TWOSAT --> SCC
     DIAM --> BFS
 ```
